@@ -6,6 +6,8 @@ import com.rcet.backend.entity.Subject;
 import com.rcet.backend.repository.SubjectRepository;
 import com.rcet.backend.service.SubjectService;
 import org.springframework.stereotype.Service;
+import com.rcet.backend.exception.DuplicateResourceException;
+import com.rcet.backend.exception.ResourceNotFoundException;
 
 import java.util.List;
 import java.util.stream.Collectors;
@@ -23,7 +25,8 @@ public class SubjectServiceImpl implements SubjectService {
     public SubjectResponse createSubject(SubjectRequest request) {
 
         if (subjectRepository.existsBySubjectCode(request.getSubjectCode())) {
-            throw new RuntimeException("Subject code already exists.");
+            throw new DuplicateResourceException(
+                    "Subject code already exists.");
         }
 
         Subject subject = new Subject();
@@ -51,7 +54,8 @@ public class SubjectServiceImpl implements SubjectService {
     public SubjectResponse getSubjectById(Long id) {
 
         Subject subject = subjectRepository.findById(id)
-                .orElseThrow(() -> new RuntimeException("Subject not found."));
+                .orElseThrow(() ->
+                        new ResourceNotFoundException("Subject not found."));
 
         return mapToResponse(subject);
     }
@@ -60,12 +64,14 @@ public class SubjectServiceImpl implements SubjectService {
     public SubjectResponse updateSubject(Long id, SubjectRequest request) {
 
         Subject subject = subjectRepository.findById(id)
-                .orElseThrow(() -> new RuntimeException("Subject not found."));
+                .orElseThrow(() ->
+                        new ResourceNotFoundException("Subject not found."));
 
         if (!subject.getSubjectCode().equals(request.getSubjectCode())
                 && subjectRepository.existsBySubjectCode(request.getSubjectCode())) {
 
-            throw new RuntimeException("Subject code already exists.");
+            throw new DuplicateResourceException(
+                    "Subject code already exists.");
         }
 
         subject.setSubjectCode(request.getSubjectCode());
@@ -82,7 +88,8 @@ public class SubjectServiceImpl implements SubjectService {
     public void deleteSubject(Long id) {
 
         Subject subject = subjectRepository.findById(id)
-                .orElseThrow(() -> new RuntimeException("Subject not found."));
+                .orElseThrow(() ->
+                        new ResourceNotFoundException("Subject not found."));
 
         subjectRepository.delete(subject);
     }

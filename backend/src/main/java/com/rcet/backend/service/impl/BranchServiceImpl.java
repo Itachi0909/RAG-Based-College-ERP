@@ -1,5 +1,7 @@
 package com.rcet.backend.service.impl;
 
+import com.rcet.backend.exception.DuplicateResourceException;
+import com.rcet.backend.exception.ResourceNotFoundException;
 import com.rcet.backend.dto.request.BranchRequest;
 import com.rcet.backend.dto.response.BranchResponse;
 import com.rcet.backend.entity.Branch;
@@ -29,10 +31,10 @@ public class BranchServiceImpl implements BranchService {
     public BranchResponse createBranch(BranchRequest request) {
 
         Department department = departmentRepository.findById(request.getDepartmentId())
-                .orElseThrow(() -> new RuntimeException("Department not found."));
+                .orElseThrow(() -> new ResourceNotFoundException("Department not found."));
 
         if (branchRepository.existsByNameAndDepartment(request.getName(), department)) {
-            throw new RuntimeException("Branch already exists in this department.");
+            throw new DuplicateResourceException("Branch already exists in this department.");
         }
 
         Branch branch = new Branch();
@@ -58,7 +60,7 @@ public class BranchServiceImpl implements BranchService {
     public BranchResponse getBranchById(Long id) {
 
         Branch branch = branchRepository.findById(id)
-                .orElseThrow(() -> new RuntimeException("Branch not found."));
+                .orElseThrow(() -> new ResourceNotFoundException("Branch not found."));
 
         return mapToResponse(branch);
     }
@@ -67,10 +69,10 @@ public class BranchServiceImpl implements BranchService {
     public BranchResponse updateBranch(Long id, BranchRequest request) {
 
         Branch branch = branchRepository.findById(id)
-                .orElseThrow(() -> new RuntimeException("Branch not found."));
+                .orElseThrow(() -> new ResourceNotFoundException("Branch not found."));
 
         Department department = departmentRepository.findById(request.getDepartmentId())
-                .orElseThrow(() -> new RuntimeException("Department not found."));
+                .orElseThrow(() -> new ResourceNotFoundException("Department not found."));
 
         branch.setName(request.getName());
         branch.setDescription(request.getDescription());
@@ -85,7 +87,7 @@ public class BranchServiceImpl implements BranchService {
     public void deleteBranch(Long id) {
 
         Branch branch = branchRepository.findById(id)
-                .orElseThrow(() -> new RuntimeException("Branch not found."));
+                .orElseThrow(() -> new ResourceNotFoundException("Branch not found."));
 
         branchRepository.delete(branch);
     }

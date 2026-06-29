@@ -8,6 +8,8 @@ import com.rcet.backend.repository.BranchRepository;
 import com.rcet.backend.repository.SemesterRepository;
 import com.rcet.backend.service.SemesterService;
 import org.springframework.stereotype.Service;
+import com.rcet.backend.exception.DuplicateResourceException;
+import com.rcet.backend.exception.ResourceNotFoundException;
 
 import java.util.List;
 import java.util.stream.Collectors;
@@ -29,12 +31,14 @@ public class SemesterServiceImpl implements SemesterService {
     public SemesterResponse createSemester(SemesterRequest request) {
 
         Branch branch = branchRepository.findById(request.getBranchId())
-                .orElseThrow(() -> new RuntimeException("Branch not found."));
+                .orElseThrow(() ->
+                        new ResourceNotFoundException("Branch not found."));
 
         if (semesterRepository.existsBySemesterNumberAndBranch(
                 request.getSemesterNumber(), branch)) {
 
-            throw new RuntimeException("Semester already exists in this branch.");
+            throw new DuplicateResourceException(
+                    "Semester already exists in this branch.");
         }
 
         Semester semester = new Semester();
@@ -60,7 +64,8 @@ public class SemesterServiceImpl implements SemesterService {
     public SemesterResponse getSemesterById(Long id) {
 
         Semester semester = semesterRepository.findById(id)
-                .orElseThrow(() -> new RuntimeException("Semester not found."));
+                .orElseThrow(() ->
+                        new ResourceNotFoundException("Semester not found."));
 
         return mapToResponse(semester);
     }
@@ -70,10 +75,12 @@ public class SemesterServiceImpl implements SemesterService {
                                            SemesterRequest request) {
 
         Semester semester = semesterRepository.findById(id)
-                .orElseThrow(() -> new RuntimeException("Semester not found."));
+                .orElseThrow(() ->
+                        new ResourceNotFoundException("Semester not found."));
 
         Branch branch = branchRepository.findById(request.getBranchId())
-                .orElseThrow(() -> new RuntimeException("Branch not found."));
+                .orElseThrow(() ->
+                        new ResourceNotFoundException("Branch not found."));
 
         semester.setSemesterNumber(request.getSemesterNumber());
         semester.setDescription(request.getDescription());
@@ -88,7 +95,8 @@ public class SemesterServiceImpl implements SemesterService {
     public void deleteSemester(Long id) {
 
         Semester semester = semesterRepository.findById(id)
-                .orElseThrow(() -> new RuntimeException("Semester not found."));
+                .orElseThrow(() ->
+                        new ResourceNotFoundException("Semester not found."));
 
         semesterRepository.delete(semester);
     }

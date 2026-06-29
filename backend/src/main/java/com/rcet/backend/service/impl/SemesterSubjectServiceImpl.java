@@ -10,6 +10,8 @@ import com.rcet.backend.repository.SemesterSubjectRepository;
 import com.rcet.backend.repository.SubjectRepository;
 import com.rcet.backend.service.SemesterSubjectService;
 import org.springframework.stereotype.Service;
+import com.rcet.backend.exception.DuplicateResourceException;
+import com.rcet.backend.exception.ResourceNotFoundException;
 
 import java.util.List;
 import java.util.stream.Collectors;
@@ -36,13 +38,16 @@ public class SemesterSubjectServiceImpl implements SemesterSubjectService {
             SemesterSubjectRequest request) {
 
         Semester semester = semesterRepository.findById(request.getSemesterId())
-                .orElseThrow(() -> new RuntimeException("Semester not found."));
+                .orElseThrow(() ->
+                        new ResourceNotFoundException("Semester not found."));
 
         Subject subject = subjectRepository.findById(request.getSubjectId())
-                .orElseThrow(() -> new RuntimeException("Subject not found."));
+                .orElseThrow(() ->
+                        new ResourceNotFoundException("Subject not found."));
 
         if (semesterSubjectRepository.existsBySemesterAndSubject(semester, subject)) {
-            throw new RuntimeException("Subject is already assigned to this semester.");
+            throw new DuplicateResourceException(
+                    "Subject is already assigned to this semester.");
         }
 
         SemesterSubject semesterSubject = new SemesterSubject();
@@ -67,7 +72,9 @@ public class SemesterSubjectServiceImpl implements SemesterSubjectService {
     public SemesterSubjectResponse getSemesterSubjectById(Long id) {
 
         SemesterSubject semesterSubject = semesterSubjectRepository.findById(id)
-                .orElseThrow(() -> new RuntimeException("Semester Subject mapping not found."));
+                .orElseThrow(() ->
+                        new ResourceNotFoundException(
+                                "Semester Subject mapping not found."));
 
         return mapToResponse(semesterSubject);
     }
@@ -78,19 +85,24 @@ public class SemesterSubjectServiceImpl implements SemesterSubjectService {
             SemesterSubjectRequest request) {
 
         SemesterSubject semesterSubject = semesterSubjectRepository.findById(id)
-                .orElseThrow(() -> new RuntimeException("Semester Subject mapping not found."));
+                .orElseThrow(() ->
+                        new ResourceNotFoundException(
+                                "Semester Subject mapping not found."));
 
         Semester semester = semesterRepository.findById(request.getSemesterId())
-                .orElseThrow(() -> new RuntimeException("Semester not found."));
+                .orElseThrow(() ->
+                        new ResourceNotFoundException("Semester not found."));
 
         Subject subject = subjectRepository.findById(request.getSubjectId())
-                .orElseThrow(() -> new RuntimeException("Subject not found."));
+                .orElseThrow(() ->
+                        new ResourceNotFoundException("Subject not found."));
 
         if (!semesterSubject.getSemester().equals(semester)
                 || !semesterSubject.getSubject().equals(subject)) {
 
             if (semesterSubjectRepository.existsBySemesterAndSubject(semester, subject)) {
-                throw new RuntimeException("Subject is already assigned to this semester.");
+                throw new DuplicateResourceException(
+                        "Subject is already assigned to this semester.");
             }
         }
 
@@ -106,7 +118,9 @@ public class SemesterSubjectServiceImpl implements SemesterSubjectService {
     public void deleteSemesterSubject(Long id) {
 
         SemesterSubject semesterSubject = semesterSubjectRepository.findById(id)
-                .orElseThrow(() -> new RuntimeException("Semester Subject mapping not found."));
+                .orElseThrow(() ->
+                        new ResourceNotFoundException(
+                                "Semester Subject mapping not found."));
 
         semesterSubjectRepository.delete(semesterSubject);
     }

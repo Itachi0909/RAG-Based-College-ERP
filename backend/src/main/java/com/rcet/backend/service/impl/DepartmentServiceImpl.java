@@ -1,5 +1,7 @@
 package com.rcet.backend.service.impl;
 
+import com.rcet.backend.exception.ResourceNotFoundException;
+import com.rcet.backend.exception.DuplicateResourceException;
 import com.rcet.backend.dto.request.DepartmentRequest;
 import com.rcet.backend.dto.response.DepartmentResponse;
 import com.rcet.backend.entity.Department;
@@ -23,7 +25,7 @@ public class DepartmentServiceImpl implements DepartmentService {
     public DepartmentResponse createDepartment(DepartmentRequest request) {
 
         if (departmentRepository.existsByName(request.getName())) {
-            throw new RuntimeException("Department already exists.");
+            throw new DuplicateResourceException("Department already exists.");
         }
 
         Department department = new Department();
@@ -55,7 +57,8 @@ public class DepartmentServiceImpl implements DepartmentService {
     public DepartmentResponse getDepartmentById(Long id) {
 
         Department department = departmentRepository.findById(id)
-                .orElseThrow(() -> new RuntimeException("Department not found."));
+                .orElseThrow(() ->
+                        new ResourceNotFoundException("Department not found."));
 
         return new DepartmentResponse(
                 department.getId(),
