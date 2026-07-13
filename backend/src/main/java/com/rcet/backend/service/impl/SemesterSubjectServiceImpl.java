@@ -5,13 +5,13 @@ import com.rcet.backend.dto.response.SemesterSubjectResponse;
 import com.rcet.backend.entity.Semester;
 import com.rcet.backend.entity.SemesterSubject;
 import com.rcet.backend.entity.Subject;
+import com.rcet.backend.exception.DuplicateResourceException;
+import com.rcet.backend.exception.ResourceNotFoundException;
 import com.rcet.backend.repository.SemesterRepository;
 import com.rcet.backend.repository.SemesterSubjectRepository;
 import com.rcet.backend.repository.SubjectRepository;
 import com.rcet.backend.service.SemesterSubjectService;
 import org.springframework.stereotype.Service;
-import com.rcet.backend.exception.DuplicateResourceException;
-import com.rcet.backend.exception.ResourceNotFoundException;
 
 import java.util.List;
 import java.util.stream.Collectors;
@@ -37,24 +37,33 @@ public class SemesterSubjectServiceImpl implements SemesterSubjectService {
     public SemesterSubjectResponse createSemesterSubject(
             SemesterSubjectRequest request) {
 
-        Semester semester = semesterRepository.findById(request.getSemesterId())
-                .orElseThrow(() ->
-                        new ResourceNotFoundException("Semester not found."));
+        Semester semester = getSemester(request.getSemesterId());
 
-        Subject subject = subjectRepository.findById(request.getSubjectId())
-                .orElseThrow(() ->
-                        new ResourceNotFoundException("Subject not found."));
+        Subject subject = getSubject(request.getSubjectId());
 
-        if (semesterSubjectRepository.existsBySemesterAndSubject(semester, subject)) {
+        if (semesterSubjectRepository.existsBySemesterAndSubject(
+                semester, subject)) {
+
             throw new DuplicateResourceException(
                     "Subject is already assigned to this semester.");
         }
 
         SemesterSubject semesterSubject = new SemesterSubject();
+
         semesterSubject.setSemester(semester);
         semesterSubject.setSubject(subject);
+        semesterSubject.setInternalMarks(request.getInternalMarks());
+        semesterSubject.setExternalMarks(request.getExternalMarks());
+        semesterSubject.setPassingMarks(request.getPassingMarks());
 
-        SemesterSubject saved = semesterSubjectRepository.save(semesterSubject);
+        semesterSubject.setTotalMarks(
+                request.getInternalMarks()
+                        + request.getExternalMarks());
+
+        semesterSubject.setActive(true);
+
+        SemesterSubject saved =
+                semesterSubjectRepository.save(semesterSubject);
 
         return mapToResponse(saved);
     }
@@ -71,12 +80,7 @@ public class SemesterSubjectServiceImpl implements SemesterSubjectService {
     @Override
     public SemesterSubjectResponse getSemesterSubjectById(Long id) {
 
-        SemesterSubject semesterSubject = semesterSubjectRepository.findById(id)
-                .orElseThrow(() ->
-                        new ResourceNotFoundException(
-                                "Semester Subject mapping not found."));
-
-        return mapToResponse(semesterSubject);
+        return mapToResponse(getSemesterSubject(id));
     }
 
     @Override
@@ -84,32 +88,36 @@ public class SemesterSubjectServiceImpl implements SemesterSubjectService {
             Long id,
             SemesterSubjectRequest request) {
 
-        SemesterSubject semesterSubject = semesterSubjectRepository.findById(id)
-                .orElseThrow(() ->
-                        new ResourceNotFoundException(
-                                "Semester Subject mapping not found."));
+        SemesterSubject semesterSubject = getSemesterSubject(id);
 
-        Semester semester = semesterRepository.findById(request.getSemesterId())
-                .orElseThrow(() ->
-                        new ResourceNotFoundException("Semester not found."));
+        Semester semester = getSemester(request.getSemesterId());
 
-        Subject subject = subjectRepository.findById(request.getSubjectId())
-                .orElseThrow(() ->
-                        new ResourceNotFoundException("Subject not found."));
+        Subject subject = getSubject(request.getSubjectId());
 
-        if (!semesterSubject.getSemester().equals(semester)
-                || !semesterSubject.getSubject().equals(subject)) {
+        semesterSubjectRepository.findBySemesterAndSubject(
+                        semester,
+                        subject)
+                .ifPresent(existing -> {
 
-            if (semesterSubjectRepository.existsBySemesterAndSubject(semester, subject)) {
-                throw new DuplicateResourceException(
-                        "Subject is already assigned to this semester.");
-            }
-        }
+                    if (!existing.getId().equals(id)) {
+
+                        throw new DuplicateResourceException(
+                                "Subject is already assigned to this semester.");
+                    }
+                });
 
         semesterSubject.setSemester(semester);
         semesterSubject.setSubject(subject);
+        semesterSubject.setInternalMarks(request.getInternalMarks());
+        semesterSubject.setExternalMarks(request.getExternalMarks());
+        semesterSubject.setPassingMarks(request.getPassingMarks());
 
-        SemesterSubject updated = semesterSubjectRepository.save(semesterSubject);
+        semesterSubject.setTotalMarks(
+                request.getInternalMarks()
+                        + request.getExternalMarks());
+
+        SemesterSubject updated =
+                semesterSubjectRepository.save(semesterSubject);
 
         return mapToResponse(updated);
     }
@@ -117,23 +125,57 @@ public class SemesterSubjectServiceImpl implements SemesterSubjectService {
     @Override
     public void deleteSemesterSubject(Long id) {
 
-        SemesterSubject semesterSubject = semesterSubjectRepository.findById(id)
+        semesterSubjectRepository.delete(getSemesterSubject(id));
+    }
+
+    // ==========================
+    // Helper Methods
+    // ==========================
+
+    private Semester getSemester(Long id) {
+
+        return semesterRepository.findById(id)
+                .orElseThrow(() ->
+                        new ResourceNotFoundException(
+                                "Semester not found."));
+    }
+
+    private Subject getSubject(Long id) {
+
+        return subjectRepository.findById(id)
+                .orElseThrow(() ->
+                        new ResourceNotFoundException(
+                                "Subject not found."));
+    }
+
+    private SemesterSubject getSemesterSubject(Long id) {
+
+        return semesterSubjectRepository.findById(id)
                 .orElseThrow(() ->
                         new ResourceNotFoundException(
                                 "Semester Subject mapping not found."));
-
-        semesterSubjectRepository.delete(semesterSubject);
     }
 
-    private SemesterSubjectResponse mapToResponse(SemesterSubject semesterSubject) {
+    private SemesterSubjectResponse mapToResponse(
+            SemesterSubject semesterSubject) {
 
         return new SemesterSubjectResponse(
+
                 semesterSubject.getId(),
+
                 semesterSubject.getSemester().getId(),
                 semesterSubject.getSemester().getSemesterNumber(),
+
                 semesterSubject.getSubject().getId(),
                 semesterSubject.getSubject().getSubjectCode(),
-                semesterSubject.getSubject().getSubjectName()
+                semesterSubject.getSubject().getSubjectName(),
+
+                semesterSubject.getInternalMarks(),
+                semesterSubject.getExternalMarks(),
+                semesterSubject.getPassingMarks(),
+                semesterSubject.getTotalMarks(),
+
+                semesterSubject.isActive()
         );
     }
 }

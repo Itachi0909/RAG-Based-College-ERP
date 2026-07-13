@@ -1,5 +1,7 @@
 package com.rcet.backend.dto.response;
 
+import com.rcet.backend.enums.SubjectType;
+
 public class SubjectResponse {
 
     private Long id;
@@ -12,6 +14,10 @@ public class SubjectResponse {
 
     private Integer credits;
 
+    private SubjectType subjectType;
+
+    private boolean active;
+
     public SubjectResponse() {
     }
 
@@ -19,13 +25,17 @@ public class SubjectResponse {
                            String subjectCode,
                            String subjectName,
                            String description,
-                           Integer credits) {
+                           Integer credits,
+                           SubjectType subjectType,
+                           boolean active) {
 
         this.id = id;
         this.subjectCode = subjectCode;
         this.subjectName = subjectName;
         this.description = description;
         this.credits = credits;
+        this.subjectType = subjectType;
+        this.active = active;
     }
 
     public Long getId() {
@@ -48,6 +58,14 @@ public class SubjectResponse {
         return credits;
     }
 
+    public SubjectType getSubjectType() {
+        return subjectType;
+    }
+
+    public boolean isActive() {
+        return active;
+    }
+
     public void setId(Long id) {
         this.id = id;
     }
@@ -66,5 +84,13 @@ public class SubjectResponse {
 
     public void setCredits(Integer credits) {
         this.credits = credits;
+    }
+
+    public void setSubjectType(SubjectType subjectType) {
+        this.subjectType = subjectType;
+    }
+
+    public void setActive(boolean active) {
+        this.active = active;
     }
 }

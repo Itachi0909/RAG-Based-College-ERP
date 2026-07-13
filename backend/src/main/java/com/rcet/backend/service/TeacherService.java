@@ -9,9 +9,9 @@ public interface TeacherService {
 
     TeacherResponse createTeacher(TeacherRequest request);
 
-    List<TeacherResponse> getAllTeachers();
-
     TeacherResponse getTeacherById(Long id);
+
+    List<TeacherResponse> getAllTeachers();
 
     TeacherResponse updateTeacher(Long id, TeacherRequest request);
 

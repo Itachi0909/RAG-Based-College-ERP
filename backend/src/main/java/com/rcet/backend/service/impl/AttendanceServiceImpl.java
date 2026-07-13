@@ -1,175 +1,288 @@
 package com.rcet.backend.service.impl;
 
-import com.rcet.backend.dto.request.AttendanceRequest;
+import com.rcet.backend.dto.request.AttendanceBulkRequest;
+import com.rcet.backend.dto.request.AttendanceItemRequest;
+import com.rcet.backend.dto.response.AttendanceBulkResponse;
 import com.rcet.backend.dto.response.AttendanceResponse;
+import com.rcet.backend.dto.response.StudentAttendanceViewResponse;
 import com.rcet.backend.entity.Attendance;
+import com.rcet.backend.entity.AttendanceSession;
+import com.rcet.backend.entity.Semester;
 import com.rcet.backend.entity.Student;
-import com.rcet.backend.entity.TeacherSubject;
-import com.rcet.backend.exception.DuplicateResourceException;
+import com.rcet.backend.enums.AttendanceSessionStatus;
 import com.rcet.backend.exception.ResourceNotFoundException;
+import com.rcet.backend.mapper.AttendanceMapper;
 import com.rcet.backend.repository.AttendanceRepository;
+import com.rcet.backend.repository.AttendanceSessionRepository;
 import com.rcet.backend.repository.StudentRepository;
-import com.rcet.backend.repository.TeacherSubjectRepository;
 import com.rcet.backend.service.AttendanceService;
+import jakarta.transaction.Transactional;
 import org.springframework.stereotype.Service;
 
+import java.util.ArrayList;
 import java.util.List;
-import java.util.stream.Collectors;
 
 @Service
+@Transactional
 public class AttendanceServiceImpl implements AttendanceService {
 
     private final AttendanceRepository attendanceRepository;
+    private final AttendanceSessionRepository attendanceSessionRepository;
     private final StudentRepository studentRepository;
-    private final TeacherSubjectRepository teacherSubjectRepository;
 
     public AttendanceServiceImpl(
             AttendanceRepository attendanceRepository,
-            StudentRepository studentRepository,
-            TeacherSubjectRepository teacherSubjectRepository) {
+            AttendanceSessionRepository attendanceSessionRepository,
+            StudentRepository studentRepository) {
 
         this.attendanceRepository = attendanceRepository;
+        this.attendanceSessionRepository = attendanceSessionRepository;
         this.studentRepository = studentRepository;
-        this.teacherSubjectRepository = teacherSubjectRepository;
     }
+
     @Override
-    public AttendanceResponse createAttendance(AttendanceRequest request) {
+    public AttendanceBulkResponse markAttendance(
+            AttendanceBulkRequest request) {
 
-        Student student = studentRepository.findById(request.getStudentId())
-                .orElseThrow(() ->
-                        new ResourceNotFoundException("Student not found."));
+        AttendanceSession session =
+                attendanceSessionRepository
+                        .findById(request.getAttendanceSessionId())
+                        .orElseThrow(() ->
+                                new ResourceNotFoundException(
+                                        "Attendance Session not found"));
 
-        TeacherSubject teacherSubject = teacherSubjectRepository
-                .findById(request.getTeacherSubjectId())
-                .orElseThrow(() ->
-                        new ResourceNotFoundException("Teacher Subject not found."));
-
-        if (attendanceRepository
-                .existsByStudentAndTeacherSubjectAndAttendanceDateAndLectureNumber(
-                        student,
-                        teacherSubject,
-                        request.getAttendanceDate(),
-                        request.getLectureNumber())) {
-
-            throw new DuplicateResourceException(
-                    "Attendance already marked for this lecture.");
+        if (session.getStatus() == AttendanceSessionStatus.CANCELLED) {
+            throw new RuntimeException("Attendance session is cancelled.");
         }
 
-        Attendance attendance = Attendance.builder()
-                .student(student)
-                .teacherSubject(teacherSubject)
-                .attendanceDate(request.getAttendanceDate())
-                .lectureNumber(request.getLectureNumber())
-                .status(request.getStatus())
-                .remarks(request.getRemarks())
-                .build();
+        List<AttendanceResponse> responseList = new ArrayList<>();
 
-        Attendance savedAttendance = attendanceRepository.save(attendance);
+        int present = 0;
+        int absent = 0;
+        int late = 0;
+        int leave = 0;
 
-        return mapToResponse(savedAttendance);
+        for (AttendanceItemRequest item : request.getAttendanceList()) {
+
+            Student student =
+                    studentRepository.findById(item.getStudentId())
+                            .orElseThrow(() ->
+                                    new ResourceNotFoundException(
+                                            "Student not found"));
+
+            if (attendanceRepository.existsByAttendanceSessionAndStudent(
+                    session,
+                    student)) {
+
+                throw new RuntimeException(
+                        "Attendance already marked for student : "
+                                + student.getEnrollmentNumber());
+            }
+
+            Attendance attendance = new Attendance();
+
+            attendance.setAttendanceSession(session);
+            attendance.setStudent(student);
+            attendance.setAttendanceStatus(item.getAttendanceStatus());
+            attendance.setRemark(item.getRemark());
+
+            attendanceRepository.save(attendance);
+
+            responseList.add(
+                    AttendanceMapper.toAttendanceResponse(attendance));
+
+            switch (item.getAttendanceStatus()) {
+
+                case PRESENT -> present++;
+
+                case ABSENT -> absent++;
+
+                case LATE -> late++;
+
+                case LEAVE -> leave++;
+            }
+        }
+
+        AttendanceBulkResponse response =
+                new AttendanceBulkResponse();
+
+        response.setAttendanceSessionId(session.getId());
+        response.setAttendance(responseList);
+
+        response.setTotalStudents(responseList.size());
+
+        response.setPresentCount(present);
+
+        response.setAbsentCount(absent);
+
+        response.setLateCount(late);
+
+        response.setLeaveCount(leave);
+
+        return response;
     }
     @Override
-    public List<AttendanceResponse> getAllAttendance() {
+    public AttendanceBulkResponse updateAttendance(
+            AttendanceBulkRequest request) {
 
-        return attendanceRepository.findAll()
+        AttendanceSession session =
+                attendanceSessionRepository
+                        .findById(request.getAttendanceSessionId())
+                        .orElseThrow(() ->
+                                new ResourceNotFoundException(
+                                        "Attendance Session not found"));
+
+        List<AttendanceResponse> responseList =
+                new ArrayList<>();
+
+        int present = 0;
+        int absent = 0;
+        int late = 0;
+        int leave = 0;
+
+        for (AttendanceItemRequest item : request.getAttendanceList()) {
+
+            Student student =
+                    studentRepository.findById(item.getStudentId())
+                            .orElseThrow(() ->
+                                    new ResourceNotFoundException(
+                                            "Student not found"));
+
+            Attendance attendance =
+                    attendanceRepository
+                            .findByAttendanceSessionAndStudent(
+                                    session,
+                                    student)
+                            .orElseThrow(() ->
+                                    new ResourceNotFoundException(
+                                            "Attendance not found"));
+
+            attendance.setAttendanceStatus(
+                    item.getAttendanceStatus());
+
+            attendance.setRemark(
+                    item.getRemark());
+
+            attendanceRepository.save(attendance);
+
+            responseList.add(
+                    AttendanceMapper.toAttendanceResponse(attendance));
+
+            switch (item.getAttendanceStatus()) {
+
+                case PRESENT -> present++;
+
+                case ABSENT -> absent++;
+
+                case LATE -> late++;
+
+                case LEAVE -> leave++;
+            }
+        }
+
+        AttendanceBulkResponse response =
+                new AttendanceBulkResponse();
+
+        response.setAttendanceSessionId(session.getId());
+
+        response.setAttendance(responseList);
+
+        response.setTotalStudents(responseList.size());
+
+        response.setPresentCount(present);
+
+        response.setAbsentCount(absent);
+
+        response.setLateCount(late);
+
+        response.setLeaveCount(leave);
+
+        return response;
+    }
+    @Override
+    public AttendanceResponse getAttendanceById(
+            Long attendanceId) {
+
+        Attendance attendance =
+                attendanceRepository
+                        .findById(attendanceId)
+                        .orElseThrow(() ->
+                                new ResourceNotFoundException(
+                                        "Attendance not found"));
+
+        return AttendanceMapper
+                .toAttendanceResponse(attendance);
+    }
+
+    @Override
+    public List<AttendanceResponse> getAttendanceBySession(
+            Long attendanceSessionId) {
+
+        AttendanceSession session =
+                attendanceSessionRepository
+                        .findById(attendanceSessionId)
+                        .orElseThrow(() ->
+                                new ResourceNotFoundException(
+                                        "Attendance Session not found"));
+
+        return attendanceRepository
+                .findByAttendanceSession(session)
                 .stream()
-                .map(this::mapToResponse)
-                .collect(Collectors.toList());
+                .map(AttendanceMapper::toAttendanceResponse)
+                .toList();
+    }
+
+    @Override
+    public List<AttendanceResponse> getAttendanceByStudent(
+            Long studentId) {
+
+        Student student =
+                studentRepository.findById(studentId)
+                        .orElseThrow(() ->
+                                new ResourceNotFoundException(
+                                        "Student not found"));
+
+        return attendanceRepository
+                .findByStudent(student)
+                .stream()
+                .map(AttendanceMapper::toAttendanceResponse)
+                .toList();
     }
     @Override
-    public AttendanceResponse getAttendanceById(Long id) {
+    public List<StudentAttendanceViewResponse>
+    getStudentsForAttendance(
+            Long attendanceSessionId) {
 
-        Attendance attendance = attendanceRepository.findById(id)
-                .orElseThrow(() ->
-                        new ResourceNotFoundException("Attendance not found."));
+        AttendanceSession session =
+                attendanceSessionRepository
+                        .findById(attendanceSessionId)
+                        .orElseThrow(() ->
+                                new ResourceNotFoundException(
+                                        "Attendance Session not found"));
 
-        return mapToResponse(attendance);
+        Semester semester =
+                session.getTeacherSubject()
+                        .getSemesterSubject()
+                        .getSemester();
+
+        List<Student> students =
+                studentRepository.findBySemester(semester);
+
+        return students.stream()
+                .map(AttendanceMapper::toStudentAttendanceViewResponse)
+                .toList();
     }
-    @Override
-    public void deleteAttendance(Long id) {
 
-        Attendance attendance = attendanceRepository.findById(id)
-                .orElseThrow(() ->
-                        new ResourceNotFoundException("Attendance not found."));
+    @Override
+    public void deleteAttendance(Long attendanceId) {
+
+        Attendance attendance =
+                attendanceRepository
+                        .findById(attendanceId)
+                        .orElseThrow(() ->
+                                new ResourceNotFoundException(
+                                        "Attendance not found"));
 
         attendanceRepository.delete(attendance);
-    }
-    @Override
-    public AttendanceResponse updateAttendance(
-            Long id,
-            AttendanceRequest request) {
-
-        Attendance attendance = attendanceRepository.findById(id)
-                .orElseThrow(() ->
-                        new ResourceNotFoundException("Attendance not found."));
-
-        Student student = studentRepository.findById(request.getStudentId())
-                .orElseThrow(() ->
-                        new ResourceNotFoundException("Student not found."));
-
-        TeacherSubject teacherSubject = teacherSubjectRepository
-                .findById(request.getTeacherSubjectId())
-                .orElseThrow(() ->
-                        new ResourceNotFoundException("Teacher Subject not found."));
-
-        Attendance existing = attendanceRepository.findAll()
-                .stream()
-                .filter(a ->
-                        a.getStudent().getId().equals(student.getId())
-                                && a.getTeacherSubject().getId().equals(teacherSubject.getId())
-                                && a.getAttendanceDate().equals(request.getAttendanceDate())
-                                && a.getLectureNumber().equals(request.getLectureNumber())
-                                && !a.getId().equals(id))
-                .findFirst()
-                .orElse(null);
-
-        if (existing != null) {
-            throw new DuplicateResourceException(
-                    "Attendance already marked for this lecture.");
-        }
-
-        attendance.setStudent(student);
-        attendance.setTeacherSubject(teacherSubject);
-        attendance.setAttendanceDate(request.getAttendanceDate());
-        attendance.setLectureNumber(request.getLectureNumber());
-        attendance.setStatus(request.getStatus());
-        attendance.setRemarks(request.getRemarks());
-
-        Attendance updatedAttendance = attendanceRepository.save(attendance);
-
-        return mapToResponse(updatedAttendance);
-    }
-    private AttendanceResponse mapToResponse(Attendance attendance) {
-
-        return AttendanceResponse.builder()
-                .id(attendance.getId())
-
-                // Student
-                .studentId(attendance.getStudent().getId())
-                .enrollmentNumber(attendance.getStudent().getEnrollmentNumber())
-                .studentName(
-                        attendance.getStudent().getFirstName()
-                                + " "
-                                + attendance.getStudent().getLastName())
-
-                // Teacher
-                .teacherId(attendance.getTeacherSubject().getTeacher().getId())
-                .teacherName(
-                        attendance.getTeacherSubject().getTeacher().getFirstName()
-                                + " "
-                                + attendance.getTeacherSubject().getTeacher().getLastName())
-
-                // Subject
-                .subjectId(attendance.getTeacherSubject().getSubject().getId())
-                .subjectCode(attendance.getTeacherSubject().getSubject().getSubjectCode())
-                .subjectName(attendance.getTeacherSubject().getSubject().getSubjectName())
-
-                // Attendance
-                .attendanceDate(attendance.getAttendanceDate())
-                .lectureNumber(attendance.getLectureNumber())
-                .status(attendance.getStatus())
-                .remarks(attendance.getRemarks())
-
-                .build();
     }
 }

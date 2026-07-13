@@ -5,12 +5,17 @@ import com.rcet.backend.dto.response.StudentResponse;
 import com.rcet.backend.entity.Branch;
 import com.rcet.backend.entity.Semester;
 import com.rcet.backend.entity.Student;
+import com.rcet.backend.entity.User;
+import com.rcet.backend.enums.Role;
 import com.rcet.backend.exception.DuplicateResourceException;
 import com.rcet.backend.exception.ResourceNotFoundException;
+import com.rcet.backend.mapper.StudentMapper;
 import com.rcet.backend.repository.BranchRepository;
 import com.rcet.backend.repository.SemesterRepository;
 import com.rcet.backend.repository.StudentRepository;
+import com.rcet.backend.repository.UserRepository;
 import com.rcet.backend.service.StudentService;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
@@ -20,258 +25,234 @@ import java.util.stream.Collectors;
 public class StudentServiceImpl implements StudentService {
 
     private final StudentRepository studentRepository;
+    private final UserRepository userRepository;
     private final BranchRepository branchRepository;
     private final SemesterRepository semesterRepository;
+    private final PasswordEncoder passwordEncoder;
 
-    public StudentServiceImpl(StudentRepository studentRepository,
-                              BranchRepository branchRepository,
-                              SemesterRepository semesterRepository) {
+    public StudentServiceImpl(
+            StudentRepository studentRepository,
+            UserRepository userRepository,
+            BranchRepository branchRepository,
+            SemesterRepository semesterRepository,
+            PasswordEncoder passwordEncoder) {
 
         this.studentRepository = studentRepository;
+        this.userRepository = userRepository;
         this.branchRepository = branchRepository;
         this.semesterRepository = semesterRepository;
+        this.passwordEncoder = passwordEncoder;
     }
 
-    private void validateStudent(StudentRequest request) {
+    // ===========================================
+    // Create Student
+    // ===========================================
 
-        if (studentRepository.existsByEmail(request.getEmail())) {
-            throw new DuplicateResourceException("Email already exists.");
-        }
-
-        if (studentRepository.existsByPhone(request.getPhone())) {
-            throw new DuplicateResourceException("Phone already exists.");
-        }
-
-        if (studentRepository.existsByEnrollmentNumber(request.getEnrollmentNumber())) {
-            throw new DuplicateResourceException("Enrollment number already exists.");
-        }
-
-        if (studentRepository.existsByRegistrationNumber(request.getRegistrationNumber())) {
-            throw new DuplicateResourceException("Registration number already exists.");
-        }
-
-        if (studentRepository.existsByRollNumber(request.getRollNumber())) {
-            throw new DuplicateResourceException("Roll number already exists.");
-        }
-    }
     @Override
     public StudentResponse createStudent(StudentRequest request) {
 
-        validateStudent(request);
+        validateDuplicates(request);
 
-        Branch branch = branchRepository.findById(request.getBranchId())
-                .orElseThrow(() ->
-                        new ResourceNotFoundException("Branch not found."));
+        Branch branch = getBranch(request.getBranchId());
+        Semester semester = getSemester(request.getSemesterId());
 
-        Semester semester = semesterRepository.findById(request.getSemesterId())
-                .orElseThrow(() ->
-                        new ResourceNotFoundException("Semester not found."));
-
-        Student student = Student.builder()
-                .firstName(request.getFirstName())
-                .middleName(request.getMiddleName())
-                .lastName(request.getLastName())
-                .gender(request.getGender())
-                .dateOfBirth(request.getDateOfBirth())
-                .bloodGroup(request.getBloodGroup())
-                .photoUrl(request.getPhotoUrl())
+        User user = User.builder()
                 .email(request.getEmail())
+                .password(passwordEncoder.encode(request.getPassword()))
                 .phone(request.getPhone())
-                .enrollmentNumber(request.getEnrollmentNumber())
-                .registrationNumber(request.getRegistrationNumber())
-                .rollNumber(request.getRollNumber())
-                .admissionYear(request.getAdmissionYear())
-                .status(request.getStatus())
-                .currentAddress(request.getCurrentAddress())
-                .currentCity(request.getCurrentCity())
-                .currentState(request.getCurrentState())
-                .currentPincode(request.getCurrentPincode())
-                .permanentAddress(request.getPermanentAddress())
-                .permanentCity(request.getPermanentCity())
-                .permanentState(request.getPermanentState())
-                .permanentPincode(request.getPermanentPincode())
-                .guardianName(request.getGuardianName())
-                .guardianPhone(request.getGuardianPhone())
-                .guardianRelation(request.getGuardianRelation())
-                .active(request.getActive() == null ? true : request.getActive())
-                .branch(branch)
-                .semester(semester)
+                .role(Role.STUDENT)
+                .enabled(true)
                 .build();
+
+        user = userRepository.save(user);
+
+        Student student = StudentMapper.toEntity(request);
+
+        student.setBranch(branch);
+        student.setSemester(semester);
+        student.setUser(user);
 
         Student savedStudent = studentRepository.save(student);
 
-        return mapToResponse(savedStudent);
+        return StudentMapper.toResponse(savedStudent);
     }
+
+    // ===========================================
+    // Get Student By ID
+    // ===========================================
+
+    @Override
+    public StudentResponse getStudentById(Long id) {
+
+        return StudentMapper.toResponse(getStudent(id));
+    }
+
+    // ===========================================
+    // Get All Students
+    // ===========================================
+
     @Override
     public List<StudentResponse> getAllStudents() {
 
         return studentRepository.findAll()
                 .stream()
-                .map(this::mapToResponse)
+                .map(StudentMapper::toResponse)
                 .collect(Collectors.toList());
     }
+
+    // ===========================================
+    // Update Student
+    // ===========================================
+
     @Override
-    public StudentResponse getStudentById(Long id) {
+    public StudentResponse updateStudent(
+            Long id,
+            StudentRequest request) {
 
-        Student student = studentRepository.findById(id)
-                .orElseThrow(() ->
-                        new ResourceNotFoundException("Student not found."));
+        Student student = getStudent(id);
 
-        return mapToResponse(student);
-    }
-    @Override
-    public void deleteStudent(Long id) {
+        if (!student.getEnrollmentNumber().equals(request.getEnrollmentNumber())
+                && studentRepository.existsByEnrollmentNumber(request.getEnrollmentNumber())) {
 
-        Student student = studentRepository.findById(id)
-                .orElseThrow(() ->
-                        new ResourceNotFoundException("Student not found."));
+            throw new DuplicateResourceException(
+                    "Enrollment number already exists.");
+        }
 
-        studentRepository.delete(student);
-    }
-    @Override
-    public StudentResponse updateStudent(Long id, StudentRequest request) {
+        if (!student.getRegistrationNumber().equals(request.getRegistrationNumber())
+                && studentRepository.existsByRegistrationNumber(request.getRegistrationNumber())) {
 
-        Student student = studentRepository.findById(id)
-                .orElseThrow(() ->
-                        new ResourceNotFoundException("Student not found."));
+            throw new DuplicateResourceException(
+                    "Registration number already exists.");
+        }
 
-        Branch branch = branchRepository.findById(request.getBranchId())
-                .orElseThrow(() ->
-                        new ResourceNotFoundException("Branch not found."));
+        if (!student.getRollNumber().equals(request.getRollNumber())
+                && studentRepository.existsByRollNumber(request.getRollNumber())) {
 
-        Semester semester = semesterRepository.findById(request.getSemesterId())
-                .orElseThrow(() ->
-                        new ResourceNotFoundException("Semester not found."));
+            throw new DuplicateResourceException(
+                    "Roll number already exists.");
+        }
 
-        studentRepository.findByEmail(request.getEmail())
-                .ifPresent(existing -> {
-                    if (!existing.getId().equals(id)) {
-                        throw new DuplicateResourceException("Email already exists.");
-                    }
-                });
+        if (!student.getEmail().equals(request.getEmail())
+                && studentRepository.existsByEmail(request.getEmail())) {
 
-        studentRepository.findByPhone(request.getPhone())
-                .ifPresent(existing -> {
-                    if (!existing.getId().equals(id)) {
-                        throw new DuplicateResourceException("Phone already exists.");
-                    }
-                });
+            throw new DuplicateResourceException(
+                    "Email already exists.");
+        }
 
-        studentRepository.findByEnrollmentNumber(request.getEnrollmentNumber())
-                .ifPresent(existing -> {
-                    if (!existing.getId().equals(id)) {
-                        throw new DuplicateResourceException("Enrollment number already exists.");
-                    }
-                });
+        if (!student.getPhone().equals(request.getPhone())
+                && studentRepository.existsByPhone(request.getPhone())) {
 
-        studentRepository.findByRegistrationNumber(request.getRegistrationNumber())
-                .ifPresent(existing -> {
-                    if (!existing.getId().equals(id)) {
-                        throw new DuplicateResourceException("Registration number already exists.");
-                    }
-                });
+            throw new DuplicateResourceException(
+                    "Phone number already exists.");
+        }
 
-        studentRepository.findByRollNumber(request.getRollNumber())
-                .ifPresent(existing -> {
-                    if (!existing.getId().equals(id)) {
-                        throw new DuplicateResourceException("Roll number already exists.");
-                    }
-                });
+        Branch branch = getBranch(request.getBranchId());
+        Semester semester = getSemester(request.getSemesterId());
 
-        student.setFirstName(request.getFirstName());
-        student.setMiddleName(request.getMiddleName());
-        student.setLastName(request.getLastName());
-        student.setGender(request.getGender());
-        student.setDateOfBirth(request.getDateOfBirth());
-        student.setBloodGroup(request.getBloodGroup());
-        student.setPhotoUrl(request.getPhotoUrl());
-
-        student.setEmail(request.getEmail());
-        student.setPhone(request.getPhone());
-
-        student.setEnrollmentNumber(request.getEnrollmentNumber());
-        student.setRegistrationNumber(request.getRegistrationNumber());
-        student.setRollNumber(request.getRollNumber());
-
-        student.setAdmissionYear(request.getAdmissionYear());
-        student.setStatus(request.getStatus());
-
-        student.setCurrentAddress(request.getCurrentAddress());
-        student.setCurrentCity(request.getCurrentCity());
-        student.setCurrentState(request.getCurrentState());
-        student.setCurrentPincode(request.getCurrentPincode());
-
-        student.setPermanentAddress(request.getPermanentAddress());
-        student.setPermanentCity(request.getPermanentCity());
-        student.setPermanentState(request.getPermanentState());
-        student.setPermanentPincode(request.getPermanentPincode());
-
-        student.setGuardianName(request.getGuardianName());
-        student.setGuardianPhone(request.getGuardianPhone());
-        student.setGuardianRelation(request.getGuardianRelation());
-
-        student.setActive(request.getActive());
+        StudentMapper.updateEntity(student, request);
 
         student.setBranch(branch);
         student.setSemester(semester);
 
-        Student updatedStudent = studentRepository.save(student);
+        User user = student.getUser();
 
-        return mapToResponse(updatedStudent);
+        user.setEmail(request.getEmail());
+        user.setPhone(request.getPhone());
+
+        if (request.getPassword() != null &&
+                !request.getPassword().isBlank()) {
+
+            user.setPassword(
+                    passwordEncoder.encode(request.getPassword()));
+        }
+
+        userRepository.save(user);
+
+        Student updatedStudent =
+                studentRepository.save(student);
+
+        return StudentMapper.toResponse(updatedStudent);
     }
-    private StudentResponse mapToResponse(Student student) {
 
-        return StudentResponse.builder()
-                .id(student.getId())
+    // ===========================================
+    // Delete Student
+    // ===========================================
 
-                // Personal Information
-                .firstName(student.getFirstName())
-                .middleName(student.getMiddleName())
-                .lastName(student.getLastName())
-                .gender(student.getGender())
-                .dateOfBirth(student.getDateOfBirth())
-                .bloodGroup(student.getBloodGroup())
-                .photoUrl(student.getPhotoUrl())
+    @Override
+    public void deleteStudent(Long id) {
 
-                // Contact Information
-                .email(student.getEmail())
-                .phone(student.getPhone())
+        Student student = getStudent(id);
 
-                // Academic Information
-                .enrollmentNumber(student.getEnrollmentNumber())
-                .registrationNumber(student.getRegistrationNumber())
-                .rollNumber(student.getRollNumber())
-                .admissionYear(student.getAdmissionYear())
-                .status(student.getStatus())
+        User user = student.getUser();
 
-                // Current Address
-                .currentAddress(student.getCurrentAddress())
-                .currentCity(student.getCurrentCity())
-                .currentState(student.getCurrentState())
-                .currentPincode(student.getCurrentPincode())
+        studentRepository.delete(student);
 
-                // Permanent Address
-                .permanentAddress(student.getPermanentAddress())
-                .permanentCity(student.getPermanentCity())
-                .permanentState(student.getPermanentState())
-                .permanentPincode(student.getPermanentPincode())
+        userRepository.delete(user);
+    }
 
-                // Guardian
-                .guardianName(student.getGuardianName())
-                .guardianPhone(student.getGuardianPhone())
-                .guardianRelation(student.getGuardianRelation())
+    // ===========================================
+    // Helper Methods
+    // ===========================================
 
-                // Branch
-                .branchId(student.getBranch().getId())
-                .branchName(student.getBranch().getName())
+    private Student getStudent(Long id) {
 
-                // Semester
-                .semesterId(student.getSemester().getId())
-                .semesterNumber(student.getSemester().getSemesterNumber())
+        return studentRepository.findById(id)
+                .orElseThrow(() ->
+                        new ResourceNotFoundException(
+                                "Student not found."));
+    }
 
-                // Status
-                .active(student.getActive())
+    private Branch getBranch(Long id) {
 
-                .build();
+        return branchRepository.findById(id)
+                .orElseThrow(() ->
+                        new ResourceNotFoundException(
+                                "Branch not found."));
+    }
+
+    private Semester getSemester(Long id) {
+
+        return semesterRepository.findById(id)
+                .orElseThrow(() ->
+                        new ResourceNotFoundException(
+                                "Semester not found."));
+    }
+
+    private void validateDuplicates(StudentRequest request) {
+
+        if (studentRepository.existsByEnrollmentNumber(
+                request.getEnrollmentNumber())) {
+
+            throw new DuplicateResourceException(
+                    "Enrollment number already exists.");
+        }
+
+        if (studentRepository.existsByRegistrationNumber(
+                request.getRegistrationNumber())) {
+
+            throw new DuplicateResourceException(
+                    "Registration number already exists.");
+        }
+
+        if (studentRepository.existsByRollNumber(
+                request.getRollNumber())) {
+
+            throw new DuplicateResourceException(
+                    "Roll number already exists.");
+        }
+
+        if (studentRepository.existsByEmail(request.getEmail())
+                || userRepository.existsByEmail(request.getEmail())) {
+
+            throw new DuplicateResourceException(
+                    "Email already exists.");
+        }
+
+        if (studentRepository.existsByPhone(request.getPhone())
+                || userRepository.existsByPhone(request.getPhone())) {
+
+            throw new DuplicateResourceException(
+                    "Phone number already exists.");
+        }
     }
 }

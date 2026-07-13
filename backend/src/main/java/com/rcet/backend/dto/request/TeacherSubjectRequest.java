@@ -1,14 +1,22 @@
 package com.rcet.backend.dto.request;
 
 import jakarta.validation.constraints.NotNull;
-import lombok.Data;
+import lombok.AllArgsConstructor;
+import lombok.Builder;
+import lombok.Getter;
+import lombok.NoArgsConstructor;
+import lombok.Setter;
 
-@Data
+@Getter
+@Setter
+@NoArgsConstructor
+@AllArgsConstructor
+@Builder
 public class TeacherSubjectRequest {
 
-    @NotNull(message = "Teacher is required")
+    @NotNull(message = "Teacher ID is required")
     private Long teacherId;
 
-    @NotNull(message = "Subject is required")
-    private Long subjectId;
+    @NotNull(message = "Semester Subject ID is required")
+    private Long semesterSubjectId;
 }

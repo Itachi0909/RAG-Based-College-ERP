@@ -23,7 +23,7 @@ public class Student extends BaseEntity {
 
     @Column(nullable = false)
     @Builder.Default
-    private Boolean active = true;
+    private boolean active = true;
 
     @Column(length = 50)
     private String middleName;
@@ -122,5 +122,13 @@ public class Student extends BaseEntity {
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "semester_id", nullable = false)
     private Semester semester;
+
+    @OneToOne(fetch = FetchType.LAZY)
+    @JoinColumn(
+            name = "user_id",
+            nullable = false,
+            unique = true
+    )
+    private User user;
 
 }

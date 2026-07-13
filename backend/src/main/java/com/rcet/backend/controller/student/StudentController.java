@@ -1,4 +1,4 @@
-package com.rcet.backend.controller.student;
+package com.rcet.backend.controller.admin;
 
 import com.rcet.backend.dto.request.StudentRequest;
 import com.rcet.backend.dto.response.StudentResponse;
@@ -11,7 +11,7 @@ import org.springframework.web.bind.annotation.*;
 import java.util.List;
 
 @RestController
-@RequestMapping("/api/students")
+@RequestMapping("/api/admin/students")
 public class StudentController {
 
     private final StudentService studentService;
@@ -19,6 +19,10 @@ public class StudentController {
     public StudentController(StudentService studentService) {
         this.studentService = studentService;
     }
+
+    // =====================================
+    // Create Student
+    // =====================================
 
     @PostMapping
     public ResponseEntity<StudentResponse> createStudent(
@@ -28,18 +32,34 @@ public class StudentController {
                 .body(studentService.createStudent(request));
     }
 
+    // =====================================
+    // Get All Students
+    // =====================================
+
     @GetMapping
     public ResponseEntity<List<StudentResponse>> getAllStudents() {
 
-        return ResponseEntity.ok(studentService.getAllStudents());
+        return ResponseEntity.ok(
+                studentService.getAllStudents()
+        );
     }
+
+    // =====================================
+    // Get Student By ID
+    // =====================================
 
     @GetMapping("/{id}")
     public ResponseEntity<StudentResponse> getStudentById(
             @PathVariable Long id) {
 
-        return ResponseEntity.ok(studentService.getStudentById(id));
+        return ResponseEntity.ok(
+                studentService.getStudentById(id)
+        );
     }
+
+    // =====================================
+    // Update Student
+    // =====================================
 
     @PutMapping("/{id}")
     public ResponseEntity<StudentResponse> updateStudent(
@@ -51,12 +71,18 @@ public class StudentController {
         );
     }
 
+    // =====================================
+    // Delete Student
+    // =====================================
+
     @DeleteMapping("/{id}")
     public ResponseEntity<String> deleteStudent(
             @PathVariable Long id) {
 
         studentService.deleteStudent(id);
 
-        return ResponseEntity.ok("Student deleted successfully.");
+        return ResponseEntity.ok(
+                "Student deleted successfully."
+        );
     }
 }

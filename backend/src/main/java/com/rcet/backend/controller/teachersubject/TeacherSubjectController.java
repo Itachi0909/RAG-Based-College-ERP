@@ -1,4 +1,4 @@
-package com.rcet.backend.controller.teachersubject;
+package com.rcet.backend.controller.admin;
 
 import com.rcet.backend.dto.request.TeacherSubjectRequest;
 import com.rcet.backend.dto.response.TeacherSubjectResponse;
@@ -11,14 +11,20 @@ import org.springframework.web.bind.annotation.*;
 import java.util.List;
 
 @RestController
-@RequestMapping("/api/teacher-subjects")
+@RequestMapping("/api/admin/teacher-subjects")
 public class TeacherSubjectController {
 
     private final TeacherSubjectService teacherSubjectService;
 
-    public TeacherSubjectController(TeacherSubjectService teacherSubjectService) {
+    public TeacherSubjectController(
+            TeacherSubjectService teacherSubjectService) {
+
         this.teacherSubjectService = teacherSubjectService;
     }
+
+    // ==========================================
+    // Create Teacher Subject Assignment
+    // ==========================================
 
     @PostMapping
     public ResponseEntity<TeacherSubjectResponse> createTeacherSubject(
@@ -28,29 +34,50 @@ public class TeacherSubjectController {
                 .body(teacherSubjectService.createTeacherSubject(request));
     }
 
+    // ==========================================
+    // Get All Teacher Subject Assignments
+    // ==========================================
+
     @GetMapping
-    public ResponseEntity<List<TeacherSubjectResponse>> getAllTeacherSubjects() {
+    public ResponseEntity<List<TeacherSubjectResponse>>
+    getAllTeacherSubjects() {
 
         return ResponseEntity.ok(
-                teacherSubjectService.getAllTeacherSubjects());
+                teacherSubjectService.getAllTeacherSubjects()
+        );
     }
+
+    // ==========================================
+    // Get Teacher Subject Assignment By ID
+    // ==========================================
 
     @GetMapping("/{id}")
-    public ResponseEntity<TeacherSubjectResponse> getTeacherSubjectById(
-            @PathVariable Long id) {
+    public ResponseEntity<TeacherSubjectResponse>
+    getTeacherSubjectById(@PathVariable Long id) {
 
         return ResponseEntity.ok(
-                teacherSubjectService.getTeacherSubjectById(id));
+                teacherSubjectService.getTeacherSubjectById(id)
+        );
     }
 
+    // ==========================================
+    // Update Teacher Subject Assignment
+    // ==========================================
+
     @PutMapping("/{id}")
-    public ResponseEntity<TeacherSubjectResponse> updateTeacherSubject(
+    public ResponseEntity<TeacherSubjectResponse>
+    updateTeacherSubject(
             @PathVariable Long id,
             @Valid @RequestBody TeacherSubjectRequest request) {
 
         return ResponseEntity.ok(
-                teacherSubjectService.updateTeacherSubject(id, request));
+                teacherSubjectService.updateTeacherSubject(id, request)
+        );
     }
+
+    // ==========================================
+    // Delete Teacher Subject Assignment
+    // ==========================================
 
     @DeleteMapping("/{id}")
     public ResponseEntity<String> deleteTeacherSubject(
@@ -59,6 +86,6 @@ public class TeacherSubjectController {
         teacherSubjectService.deleteTeacherSubject(id);
 
         return ResponseEntity.ok(
-                "Teacher Subject mapping deleted successfully.");
+                "Teacher Subject assignment deleted successfully.");
     }
 }

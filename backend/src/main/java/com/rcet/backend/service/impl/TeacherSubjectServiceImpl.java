@@ -2,12 +2,13 @@ package com.rcet.backend.service.impl;
 
 import com.rcet.backend.dto.request.TeacherSubjectRequest;
 import com.rcet.backend.dto.response.TeacherSubjectResponse;
-import com.rcet.backend.entity.Subject;
+import com.rcet.backend.entity.SemesterSubject;
 import com.rcet.backend.entity.Teacher;
 import com.rcet.backend.entity.TeacherSubject;
 import com.rcet.backend.exception.DuplicateResourceException;
 import com.rcet.backend.exception.ResourceNotFoundException;
-import com.rcet.backend.repository.SubjectRepository;
+import com.rcet.backend.mapper.TeacherSubjectMapper;
+import com.rcet.backend.repository.SemesterSubjectRepository;
 import com.rcet.backend.repository.TeacherRepository;
 import com.rcet.backend.repository.TeacherSubjectRepository;
 import com.rcet.backend.service.TeacherSubjectService;
@@ -17,131 +18,164 @@ import java.util.List;
 import java.util.stream.Collectors;
 
 @Service
-public class TeacherSubjectServiceImpl implements TeacherSubjectService {
+public class TeacherSubjectServiceImpl
+        implements TeacherSubjectService {
 
     private final TeacherSubjectRepository teacherSubjectRepository;
     private final TeacherRepository teacherRepository;
-    private final SubjectRepository subjectRepository;
+    private final SemesterSubjectRepository semesterSubjectRepository;
 
     public TeacherSubjectServiceImpl(
             TeacherSubjectRepository teacherSubjectRepository,
             TeacherRepository teacherRepository,
-            SubjectRepository subjectRepository) {
+            SemesterSubjectRepository semesterSubjectRepository) {
 
         this.teacherSubjectRepository = teacherSubjectRepository;
         this.teacherRepository = teacherRepository;
-        this.subjectRepository = subjectRepository;
+        this.semesterSubjectRepository = semesterSubjectRepository;
     }
+
+    // ==========================================
+    // Create
+    // ==========================================
+
     @Override
-    public TeacherSubjectResponse createTeacherSubject(TeacherSubjectRequest request) {
+    public TeacherSubjectResponse createTeacherSubject(
+            TeacherSubjectRequest request) {
 
-        Teacher teacher = teacherRepository.findById(request.getTeacherId())
-                .orElseThrow(() ->
-                        new ResourceNotFoundException("Teacher not found."));
+        Teacher teacher = getTeacher(request.getTeacherId());
 
-        Subject subject = subjectRepository.findById(request.getSubjectId())
-                .orElseThrow(() ->
-                        new ResourceNotFoundException("Subject not found."));
+        SemesterSubject semesterSubject =
+                getSemesterSubject(request.getSemesterSubjectId());
 
-        if (teacherSubjectRepository.existsByTeacherAndSubject(teacher, subject)) {
+        if (teacherSubjectRepository.existsByTeacherAndSemesterSubject(
+                teacher,
+                semesterSubject)) {
+
             throw new DuplicateResourceException(
                     "Teacher is already assigned to this subject.");
         }
 
-        TeacherSubject teacherSubject = TeacherSubject.builder()
-                .teacher(teacher)
-                .subject(subject)
-                .build();
+        TeacherSubject teacherSubject =
+                new TeacherSubject();
 
-        TeacherSubject saved = teacherSubjectRepository.save(teacherSubject);
+        teacherSubject.setTeacher(teacher);
+        teacherSubject.setSemesterSubject(semesterSubject);
 
-        return mapToResponse(saved);
+        TeacherSubject saved =
+                teacherSubjectRepository.save(teacherSubject);
+
+        return TeacherSubjectMapper.toResponse(saved);
     }
+
+    // ==========================================
+    // Get By Id
+    // ==========================================
+
     @Override
-    public List<TeacherSubjectResponse> getAllTeacherSubjects() {
+    public TeacherSubjectResponse getTeacherSubjectById(
+            Long id) {
+
+        return TeacherSubjectMapper.toResponse(
+                getTeacherSubject(id));
+    }
+
+    // ==========================================
+    // Get All
+    // ==========================================
+
+    @Override
+    public List<TeacherSubjectResponse>
+    getAllTeacherSubjects() {
 
         return teacherSubjectRepository.findAll()
                 .stream()
-                .map(this::mapToResponse)
+                .map(TeacherSubjectMapper::toResponse)
                 .collect(Collectors.toList());
     }
-    @Override
-    public TeacherSubjectResponse getTeacherSubjectById(Long id) {
 
-        TeacherSubject teacherSubject = teacherSubjectRepository.findById(id)
-                .orElseThrow(() ->
-                        new ResourceNotFoundException(
-                                "Teacher Subject mapping not found."));
+    // ==========================================
+    // Update
+    // ==========================================
 
-        return mapToResponse(teacherSubject);
-    }
-    @Override
-    public void deleteTeacherSubject(Long id) {
-
-        TeacherSubject teacherSubject = teacherSubjectRepository.findById(id)
-                .orElseThrow(() ->
-                        new ResourceNotFoundException(
-                                "Teacher Subject mapping not found."));
-
-        teacherSubjectRepository.delete(teacherSubject);
-    }
     @Override
     public TeacherSubjectResponse updateTeacherSubject(
             Long id,
             TeacherSubjectRequest request) {
 
-        TeacherSubject teacherSubject = teacherSubjectRepository.findById(id)
-                .orElseThrow(() ->
-                        new ResourceNotFoundException(
-                                "Teacher Subject mapping not found."));
+        TeacherSubject teacherSubject =
+                getTeacherSubject(id);
 
-        Teacher teacher = teacherRepository.findById(request.getTeacherId())
-                .orElseThrow(() ->
-                        new ResourceNotFoundException("Teacher not found."));
+        Teacher teacher =
+                getTeacher(request.getTeacherId());
 
-        Subject subject = subjectRepository.findById(request.getSubjectId())
-                .orElseThrow(() ->
-                        new ResourceNotFoundException("Subject not found."));
+        SemesterSubject semesterSubject =
+                getSemesterSubject(request.getSemesterSubjectId());
 
-        TeacherSubject existing = teacherSubjectRepository
-                .findAll()
-                .stream()
-                .filter(ts -> ts.getTeacher().getId().equals(teacher.getId())
-                        && ts.getSubject().getId().equals(subject.getId())
-                        && !ts.getId().equals(id))
-                .findFirst()
-                .orElse(null);
+        if ((!teacherSubject.getTeacher().equals(teacher))
+                || (!teacherSubject.getSemesterSubject()
+                .equals(semesterSubject))) {
 
-        if (existing != null) {
-            throw new DuplicateResourceException(
-                    "Teacher is already assigned to this subject.");
+            if (teacherSubjectRepository
+                    .existsByTeacherAndSemesterSubject(
+                            teacher,
+                            semesterSubject)) {
+
+                throw new DuplicateResourceException(
+                        "Teacher is already assigned to this subject.");
+            }
         }
 
         teacherSubject.setTeacher(teacher);
-        teacherSubject.setSubject(subject);
+        teacherSubject.setSemesterSubject(semesterSubject);
 
         TeacherSubject updated =
                 teacherSubjectRepository.save(teacherSubject);
 
-        return mapToResponse(updated);
+        return TeacherSubjectMapper.toResponse(updated);
     }
-    private TeacherSubjectResponse mapToResponse(
-            TeacherSubject teacherSubject) {
 
-        return TeacherSubjectResponse.builder()
-                .id(teacherSubject.getId())
+    // ==========================================
+    // Delete
+    // ==========================================
 
-                .teacherId(teacherSubject.getTeacher().getId())
-                .employeeId(teacherSubject.getTeacher().getEmployeeId())
-                .teacherName(
-                        teacherSubject.getTeacher().getFirstName()
-                                + " "
-                                + teacherSubject.getTeacher().getLastName())
+    @Override
+    public void deleteTeacherSubject(Long id) {
 
-                .subjectId(teacherSubject.getSubject().getId())
-                .subjectCode(teacherSubject.getSubject().getSubjectCode())
-                .subjectName(teacherSubject.getSubject().getSubjectName())
+        TeacherSubject teacherSubject =
+                getTeacherSubject(id);
 
-                .build();
+        teacherSubjectRepository.delete(teacherSubject);
+    }
+
+    // ==========================================
+    // Helper Methods
+    // ==========================================
+
+    private TeacherSubject getTeacherSubject(
+            Long id) {
+
+        return teacherSubjectRepository.findById(id)
+                .orElseThrow(() ->
+                        new ResourceNotFoundException(
+                                "Teacher Subject assignment not found."));
+    }
+
+    private Teacher getTeacher(
+            Long id) {
+
+        return teacherRepository.findById(id)
+                .orElseThrow(() ->
+                        new ResourceNotFoundException(
+                                "Teacher not found."));
+    }
+
+    private SemesterSubject getSemesterSubject(
+            Long id) {
+
+        return semesterSubjectRepository.findById(id)
+                .orElseThrow(() ->
+                        new ResourceNotFoundException(
+                                "Semester Subject not found."));
     }
 }

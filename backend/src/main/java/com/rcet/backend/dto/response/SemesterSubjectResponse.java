@@ -14,15 +14,31 @@ public class SemesterSubjectResponse {
 
     private String subjectName;
 
+    private Integer internalMarks;
+
+    private Integer externalMarks;
+
+    private Integer passingMarks;
+
+    private Integer totalMarks;
+
+    private boolean active;
+
     public SemesterSubjectResponse() {
     }
 
-    public SemesterSubjectResponse(Long id,
-                                   Long semesterId,
-                                   Integer semesterNumber,
-                                   Long subjectId,
-                                   String subjectCode,
-                                   String subjectName) {
+    public SemesterSubjectResponse(
+            Long id,
+            Long semesterId,
+            Integer semesterNumber,
+            Long subjectId,
+            String subjectCode,
+            String subjectName,
+            Integer internalMarks,
+            Integer externalMarks,
+            Integer passingMarks,
+            Integer totalMarks,
+            boolean active) {
 
         this.id = id;
         this.semesterId = semesterId;
@@ -30,6 +46,11 @@ public class SemesterSubjectResponse {
         this.subjectId = subjectId;
         this.subjectCode = subjectCode;
         this.subjectName = subjectName;
+        this.internalMarks = internalMarks;
+        this.externalMarks = externalMarks;
+        this.passingMarks = passingMarks;
+        this.totalMarks = totalMarks;
+        this.active = active;
     }
 
     public Long getId() {
@@ -56,6 +77,26 @@ public class SemesterSubjectResponse {
         return subjectName;
     }
 
+    public Integer getInternalMarks() {
+        return internalMarks;
+    }
+
+    public Integer getExternalMarks() {
+        return externalMarks;
+    }
+
+    public Integer getPassingMarks() {
+        return passingMarks;
+    }
+
+    public Integer getTotalMarks() {
+        return totalMarks;
+    }
+
+    public boolean isActive() {
+        return active;
+    }
+
     public void setId(Long id) {
         this.id = id;
     }
@@ -78,5 +119,25 @@ public class SemesterSubjectResponse {
 
     public void setSubjectName(String subjectName) {
         this.subjectName = subjectName;
+    }
+
+    public void setInternalMarks(Integer internalMarks) {
+        this.internalMarks = internalMarks;
+    }
+
+    public void setExternalMarks(Integer externalMarks) {
+        this.externalMarks = externalMarks;
+    }
+
+    public void setPassingMarks(Integer passingMarks) {
+        this.passingMarks = passingMarks;
+    }
+
+    public void setTotalMarks(Integer totalMarks) {
+        this.totalMarks = totalMarks;
+    }
+
+    public void setActive(boolean active) {
+        this.active = active;
     }
 }

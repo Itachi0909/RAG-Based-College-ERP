@@ -114,20 +114,18 @@ public class MarksServiceImpl implements MarksService {
                 .orElseThrow(() ->
                         new ResourceNotFoundException("Teacher Subject not found."));
 
-        Marks existing = marksRepository.findAll()
-                .stream()
-                .filter(m ->
-                        m.getStudent().getId().equals(student.getId())
-                                && m.getTeacherSubject().getId().equals(teacherSubject.getId())
-                                && m.getExamType().equals(request.getExamType())
-                                && !m.getId().equals(id))
-                .findFirst()
-                .orElse(null);
-
-        if (existing != null) {
-            throw new DuplicateResourceException(
-                    "Marks already exist for this exam.");
-        }
+        marksRepository
+                .findByStudentAndTeacherSubjectAndExamType(
+                        student,
+                        teacherSubject,
+                        request.getExamType()
+                )
+                .ifPresent(existing -> {
+                    if (!existing.getId().equals(id)) {
+                        throw new DuplicateResourceException(
+                                "Marks already exist for this exam.");
+                    }
+                });
 
         if (request.getObtainedMarks() > request.getMaximumMarks()) {
             throw new IllegalArgumentException(
@@ -169,9 +167,51 @@ public class MarksServiceImpl implements MarksService {
                                 + marks.getTeacherSubject().getTeacher().getLastName())
 
                 // Subject
-                .subjectId(marks.getTeacherSubject().getSubject().getId())
-                .subjectCode(marks.getTeacherSubject().getSubject().getSubjectCode())
-                .subjectName(marks.getTeacherSubject().getSubject().getSubjectName())
+                .subjectId(
+                        marks.getTeacherSubject()
+                                .getSemesterSubject()
+                                .getSubject()
+                                .getId())
+
+                .subjectCode(
+                        marks.getTeacherSubject()
+                                .getSemesterSubject()
+                                .getSubject()
+                                .getSubjectCode())
+
+                .subjectName(
+                        marks.getTeacherSubject()
+                                .getSemesterSubject()
+                                .getSubject()
+                                .getSubjectName())
+
+                // Semester
+                .semesterId(
+                        marks.getTeacherSubject()
+                                .getSemesterSubject()
+                                .getSemester()
+                                .getId())
+
+                .semesterNumber(
+                        marks.getTeacherSubject()
+                                .getSemesterSubject()
+                                .getSemester()
+                                .getSemesterNumber())
+
+                // Branch
+                .branchId(
+                        marks.getTeacherSubject()
+                                .getSemesterSubject()
+                                .getSemester()
+                                .getBranch()
+                                .getId())
+
+                .branchName(
+                        marks.getTeacherSubject()
+                                .getSemesterSubject()
+                                .getSemester()
+                                .getBranch()
+                                .getName())
 
                 // Marks
                 .examType(marks.getExamType())

@@ -66,13 +66,32 @@ public class BranchServiceImpl implements BranchService {
     }
 
     @Override
-    public BranchResponse updateBranch(Long id, BranchRequest request) {
+    public BranchResponse updateBranch(
+            Long id,
+            BranchRequest request) {
 
         Branch branch = branchRepository.findById(id)
-                .orElseThrow(() -> new ResourceNotFoundException("Branch not found."));
+                .orElseThrow(() ->
+                        new ResourceNotFoundException(
+                                "Branch not found."));
 
-        Department department = departmentRepository.findById(request.getDepartmentId())
-                .orElseThrow(() -> new ResourceNotFoundException("Department not found."));
+        Department department = departmentRepository.findById(
+                        request.getDepartmentId())
+                .orElseThrow(() ->
+                        new ResourceNotFoundException(
+                                "Department not found."));
+
+        branchRepository.findByNameAndDepartment(
+                        request.getName(),
+                        department)
+                .ifPresent(existing -> {
+
+                    if (!existing.getId().equals(id)) {
+
+                        throw new DuplicateResourceException(
+                                "Branch already exists in this department.");
+                    }
+                });
 
         branch.setName(request.getName());
         branch.setDescription(request.getDescription());

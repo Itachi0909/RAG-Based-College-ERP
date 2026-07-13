@@ -70,7 +70,7 @@ public class Teacher extends BaseEntity {
 
     @Column(nullable = false)
     @Builder.Default
-    private Boolean active = true;
+    private boolean active = true;
 
     // ==========================
     // Relationships
@@ -83,4 +83,12 @@ public class Teacher extends BaseEntity {
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "branch_id", nullable = false)
     private Branch branch;
+
+    @OneToOne(fetch = FetchType.LAZY)
+    @JoinColumn(
+            name = "user_id",
+            nullable = false,
+            unique = true
+    )
+    private User user;
 }

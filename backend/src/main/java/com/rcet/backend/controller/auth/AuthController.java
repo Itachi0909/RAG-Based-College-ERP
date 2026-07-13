@@ -1,10 +1,10 @@
 package com.rcet.backend.controller.auth;
 
 import com.rcet.backend.dto.request.LoginRequest;
-import com.rcet.backend.dto.request.RegisterRequest;
+import com.rcet.backend.dto.request.RegisterAdminRequest;
 import com.rcet.backend.dto.response.LoginResponse;
 import com.rcet.backend.service.AuthService;
-import org.springframework.http.HttpStatus;
+import jakarta.validation.Valid;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
@@ -18,19 +18,29 @@ public class AuthController {
         this.authService = authService;
     }
 
-    @PostMapping("/register")
-    public ResponseEntity<String> register(
-            @RequestBody RegisterRequest request) {
-
-        return ResponseEntity
-                .status(HttpStatus.CREATED)
-                .body(authService.register(request));
-    }
+    // ==========================
+    // Login
+    // ==========================
 
     @PostMapping("/login")
     public ResponseEntity<LoginResponse> login(
-            @RequestBody LoginRequest request) {
+            @Valid @RequestBody LoginRequest request) {
 
-        return ResponseEntity.ok(authService.login(request));
+        return ResponseEntity.ok(
+                authService.login(request)
+        );
+    }
+
+    // ==========================
+    // Register Admin
+    // ==========================
+
+    @PostMapping("/register/admin")
+    public ResponseEntity<LoginResponse> registerAdmin(
+            @Valid @RequestBody RegisterAdminRequest request) {
+
+        return ResponseEntity.ok(
+                authService.registerAdmin(request)
+        );
     }
 }

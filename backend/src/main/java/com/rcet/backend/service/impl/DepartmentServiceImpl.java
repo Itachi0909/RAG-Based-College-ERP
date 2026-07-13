@@ -34,11 +34,7 @@ public class DepartmentServiceImpl implements DepartmentService {
 
         Department savedDepartment = departmentRepository.save(department);
 
-        return new DepartmentResponse(
-                savedDepartment.getId(),
-                savedDepartment.getName(),
-                savedDepartment.getDescription()
-        );
+        return mapToResponse(savedDepartment);
     }
 
     @Override
@@ -46,10 +42,7 @@ public class DepartmentServiceImpl implements DepartmentService {
 
         return departmentRepository.findAll()
                 .stream()
-                .map(department -> new DepartmentResponse(
-                        department.getId(),
-                        department.getName(),
-                        department.getDescription()))
+                .map(this::mapToResponse)
                 .collect(Collectors.toList());
     }
 
@@ -60,37 +53,55 @@ public class DepartmentServiceImpl implements DepartmentService {
                 .orElseThrow(() ->
                         new ResourceNotFoundException("Department not found."));
 
-        return new DepartmentResponse(
-                department.getId(),
-                department.getName(),
-                department.getDescription()
-        );
+        return mapToResponse(department);
     }
 
     @Override
-    public DepartmentResponse updateDepartment(Long id, DepartmentRequest request) {
+    public DepartmentResponse updateDepartment(
+            Long id,
+            DepartmentRequest request) {
 
         Department department = departmentRepository.findById(id)
-                .orElseThrow(() -> new RuntimeException("Department not found."));
+                .orElseThrow(() ->
+                        new ResourceNotFoundException(
+                                "Department not found."));
+
+        departmentRepository.findByName(request.getName())
+                .ifPresent(existing -> {
+
+                    if (!existing.getId().equals(id)) {
+
+                        throw new DuplicateResourceException(
+                                "Department already exists.");
+                    }
+                });
 
         department.setName(request.getName());
         department.setDescription(request.getDescription());
 
-        Department updatedDepartment = departmentRepository.save(department);
+        Department updatedDepartment =
+                departmentRepository.save(department);
 
-        return new DepartmentResponse(
-                updatedDepartment.getId(),
-                updatedDepartment.getName(),
-                updatedDepartment.getDescription()
-        );
+        return mapToResponse(updatedDepartment);
     }
 
     @Override
     public void deleteDepartment(Long id) {
 
         Department department = departmentRepository.findById(id)
-                .orElseThrow(() -> new RuntimeException("Department not found."));
+                .orElseThrow(() ->
+                        new ResourceNotFoundException(
+                                "Department not found."));
 
         departmentRepository.delete(department);
+    }
+    private DepartmentResponse mapToResponse(
+            Department department) {
+
+        return new DepartmentResponse(
+                department.getId(),
+                department.getName(),
+                department.getDescription()
+        );
     }
 }

@@ -3,15 +3,29 @@ package com.rcet.backend.dto.request;
 import com.rcet.backend.entity.Designation;
 import com.rcet.backend.entity.Gender;
 import com.rcet.backend.entity.TeacherStatus;
-import jakarta.validation.constraints.Email;
-import jakarta.validation.constraints.NotBlank;
-import jakarta.validation.constraints.NotNull;
-import lombok.Data;
+import jakarta.validation.constraints.*;
+import lombok.*;
 
 import java.time.LocalDate;
 
-@Data
+@Getter
+@Setter
+@NoArgsConstructor
+@AllArgsConstructor
+@Builder
 public class TeacherRequest {
+
+    // ==========================
+    // Login Information
+    // ==========================
+
+    @Email(message = "Invalid email")
+    @NotBlank(message = "Email is required")
+    private String email;
+
+    @NotBlank(message = "Password is required")
+    @Size(min = 6, message = "Password must contain at least 6 characters")
+    private String password;
 
     // ==========================
     // Personal Information
@@ -37,11 +51,7 @@ public class TeacherRequest {
     // Contact Information
     // ==========================
 
-    @Email(message = "Invalid email")
-    @NotBlank(message = "Email is required")
-    private String email;
-
-    @NotBlank(message = "Phone is required")
+    @NotBlank(message = "Phone number is required")
     private String phone;
 
     // ==========================
@@ -72,10 +82,4 @@ public class TeacherRequest {
 
     @NotNull(message = "Branch is required")
     private Long branchId;
-
-    // ==========================
-    // Status
-    // ==========================
-
-    private Boolean active;
 }

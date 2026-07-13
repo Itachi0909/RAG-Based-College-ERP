@@ -1,13 +1,22 @@
 package com.rcet.backend.repository;
 
+import com.rcet.backend.entity.Semester;
 import com.rcet.backend.entity.Student;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Repository;
+import org.springframework.data.jpa.repository.JpaSpecificationExecutor;
 
+import java.util.List;
 import java.util.Optional;
 
 @Repository
-public interface StudentRepository extends JpaRepository<Student, Long> {
+public interface StudentRepository
+        extends JpaRepository<Student, Long>,
+        JpaSpecificationExecutor<Student> {
+
+    List<Student> findBySemester(
+            Semester semester);
+
 
 
     Optional<Student> findByEmail(String email);

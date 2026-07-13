@@ -28,13 +28,19 @@ public class MarksResponse {
     private String subjectCode;
     private String subjectName;
 
+    // Semester Details
+    private Long semesterId;
+    private Integer semesterNumber;
+
+    // Branch Details
+    private Long branchId;
+    private String branchName;
+
     // Marks Details
     private ExamType examType;
     private Double maximumMarks;
     private Double obtainedMarks;
     private Double weightage;
-
-    // Calculated
     private Double percentage;
 
     private String remarks;

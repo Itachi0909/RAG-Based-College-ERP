@@ -1,20 +1,32 @@
 package com.rcet.backend.service;
 
-import com.rcet.backend.dto.request.AttendanceRequest;
+import com.rcet.backend.dto.request.AttendanceBulkRequest;
+import com.rcet.backend.dto.response.AttendanceBulkResponse;
 import com.rcet.backend.dto.response.AttendanceResponse;
+import com.rcet.backend.dto.response.StudentAttendanceViewResponse;
 
 import java.util.List;
 
 public interface AttendanceService {
 
-    AttendanceResponse createAttendance(AttendanceRequest request);
+    AttendanceBulkResponse markAttendance(
+            AttendanceBulkRequest request);
 
-    List<AttendanceResponse> getAllAttendance();
+    AttendanceBulkResponse updateAttendance(
+            AttendanceBulkRequest request);
 
-    AttendanceResponse getAttendanceById(Long id);
+    AttendanceResponse getAttendanceById(
+            Long attendanceId);
 
-    AttendanceResponse updateAttendance(Long id,
-                                        AttendanceRequest request);
+    List<AttendanceResponse> getAttendanceBySession(
+            Long attendanceSessionId);
 
-    void deleteAttendance(Long id);
+    List<AttendanceResponse> getAttendanceByStudent(
+            Long studentId);
+
+    List<StudentAttendanceViewResponse> getStudentsForAttendance(
+            Long attendanceSessionId);
+
+    void deleteAttendance(
+            Long attendanceId);
 }

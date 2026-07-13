@@ -7,14 +7,18 @@ import java.util.List;
 
 public interface TeacherSubjectService {
 
-    TeacherSubjectResponse createTeacherSubject(TeacherSubjectRequest request);
+    TeacherSubjectResponse createTeacherSubject(
+            TeacherSubjectRequest request);
+
+    TeacherSubjectResponse getTeacherSubjectById(
+            Long id);
 
     List<TeacherSubjectResponse> getAllTeacherSubjects();
 
-    TeacherSubjectResponse getTeacherSubjectById(Long id);
+    TeacherSubjectResponse updateTeacherSubject(
+            Long id,
+            TeacherSubjectRequest request);
 
-    TeacherSubjectResponse updateTeacherSubject(Long id,
-                                                TeacherSubjectRequest request);
-
-    void deleteTeacherSubject(Long id);
+    void deleteTeacherSubject(
+            Long id);
 }

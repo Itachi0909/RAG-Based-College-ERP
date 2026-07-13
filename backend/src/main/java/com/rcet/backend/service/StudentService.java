@@ -9,11 +9,12 @@ public interface StudentService {
 
     StudentResponse createStudent(StudentRequest request);
 
-    List<StudentResponse> getAllStudents();
-
     StudentResponse getStudentById(Long id);
 
-    StudentResponse updateStudent(Long id, StudentRequest request);
+    List<StudentResponse> getAllStudents();
+
+    StudentResponse updateStudent(Long id,
+                                  StudentRequest request);
 
     void deleteStudent(Long id);
 }

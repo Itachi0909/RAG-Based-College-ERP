@@ -6,64 +6,110 @@ import com.rcet.backend.entity.GuardianRelation;
 import com.rcet.backend.entity.StudentStatus;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
-import lombok.Data;
+import lombok.Getter;
 import lombok.NoArgsConstructor;
+import lombok.Setter;
 
 import java.time.LocalDate;
 
-@Data
-@Builder
+@Getter
+@Setter
 @NoArgsConstructor
 @AllArgsConstructor
+@Builder
 public class StudentResponse {
+
+    // =====================================
+    // Basic Information
+    // =====================================
 
     private Long id;
 
-    // Personal Information
     private String firstName;
-    private String middleName;
-    private String lastName;
-    private Gender gender;
-    private LocalDate dateOfBirth;
-    private BloodGroup bloodGroup;
-    private String photoUrl;
 
-    // Contact Information
+    private String middleName;
+
+    private String lastName;
+
     private String email;
+
     private String phone;
 
+    // =====================================
+    // Personal Information
+    // =====================================
+
+    private Gender gender;
+
+    private LocalDate dateOfBirth;
+
+    private BloodGroup bloodGroup;
+
+    private String photoUrl;
+
+    // =====================================
     // Academic Information
+    // =====================================
+
     private String enrollmentNumber;
+
     private String registrationNumber;
+
     private String rollNumber;
+
     private Integer admissionYear;
+
     private StudentStatus status;
 
-    // Current Address
+    // =====================================
+    // Address
+    // =====================================
+
     private String currentAddress;
+
     private String currentCity;
+
     private String currentState;
+
     private String currentPincode;
 
-    // Permanent Address
     private String permanentAddress;
+
     private String permanentCity;
+
     private String permanentState;
+
     private String permanentPincode;
 
-    // Guardian Information
+    // =====================================
+    // Guardian
+    // =====================================
+
     private String guardianName;
+
     private String guardianPhone;
+
     private GuardianRelation guardianRelation;
 
-    // Branch Details
+    // =====================================
+    // Branch
+    // =====================================
+
     private Long branchId;
+
     private String branchName;
 
-    // Semester Details
+    // =====================================
+    // Semester
+    // =====================================
+
     private Long semesterId;
+
     private Integer semesterNumber;
 
+    // =====================================
     // Status
-    private Boolean active;
+    // =====================================
+
+    private boolean active;
 }

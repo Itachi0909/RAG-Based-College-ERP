@@ -35,6 +35,8 @@ public class SubjectServiceImpl implements SubjectService {
         subject.setSubjectName(request.getSubjectName());
         subject.setDescription(request.getDescription());
         subject.setCredits(request.getCredits());
+        subject.setSubjectType(request.getSubjectType());
+        subject.setActive(true);
 
         Subject savedSubject = subjectRepository.save(subject);
 
@@ -53,19 +55,16 @@ public class SubjectServiceImpl implements SubjectService {
     @Override
     public SubjectResponse getSubjectById(Long id) {
 
-        Subject subject = subjectRepository.findById(id)
-                .orElseThrow(() ->
-                        new ResourceNotFoundException("Subject not found."));
+        Subject subject = getSubject(id);
 
         return mapToResponse(subject);
     }
 
     @Override
-    public SubjectResponse updateSubject(Long id, SubjectRequest request) {
+    public SubjectResponse updateSubject(Long id,
+                                         SubjectRequest request) {
 
-        Subject subject = subjectRepository.findById(id)
-                .orElseThrow(() ->
-                        new ResourceNotFoundException("Subject not found."));
+        Subject subject = getSubject(id);
 
         if (!subject.getSubjectCode().equals(request.getSubjectCode())
                 && subjectRepository.existsBySubjectCode(request.getSubjectCode())) {
@@ -78,6 +77,7 @@ public class SubjectServiceImpl implements SubjectService {
         subject.setSubjectName(request.getSubjectName());
         subject.setDescription(request.getDescription());
         subject.setCredits(request.getCredits());
+        subject.setSubjectType(request.getSubjectType());
 
         Subject updatedSubject = subjectRepository.save(subject);
 
@@ -87,11 +87,16 @@ public class SubjectServiceImpl implements SubjectService {
     @Override
     public void deleteSubject(Long id) {
 
-        Subject subject = subjectRepository.findById(id)
-                .orElseThrow(() ->
-                        new ResourceNotFoundException("Subject not found."));
+        Subject subject = getSubject(id);
 
         subjectRepository.delete(subject);
+    }
+    private Subject getSubject(Long id) {
+
+        return subjectRepository.findById(id)
+                .orElseThrow(() ->
+                        new ResourceNotFoundException(
+                                "Subject not found."));
     }
 
     private SubjectResponse mapToResponse(Subject subject) {
@@ -101,7 +106,9 @@ public class SubjectServiceImpl implements SubjectService {
                 subject.getSubjectCode(),
                 subject.getSubjectName(),
                 subject.getDescription(),
-                subject.getCredits()
+                subject.getCredits(),
+                subject.getSubjectType(),
+                subject.isActive()
         );
     }
 }

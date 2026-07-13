@@ -1,17 +1,19 @@
-package com.rcet.backend.controller.teacher;
+package com.rcet.backend.controller.admin;
 
 import com.rcet.backend.dto.request.TeacherRequest;
 import com.rcet.backend.dto.response.TeacherResponse;
 import com.rcet.backend.service.TeacherService;
 import jakarta.validation.Valid;
+import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
 
 @RestController
-@RequestMapping("/api/teachers")
+@RequestMapping("/api/admin/teachers")
 public class TeacherController {
 
     private final TeacherService teacherService;
@@ -19,6 +21,10 @@ public class TeacherController {
     public TeacherController(TeacherService teacherService) {
         this.teacherService = teacherService;
     }
+
+    // ======================================
+    // Create Teacher
+    // ======================================
 
     @PostMapping
     public ResponseEntity<TeacherResponse> createTeacher(
@@ -28,18 +34,34 @@ public class TeacherController {
                 .body(teacherService.createTeacher(request));
     }
 
+    // ======================================
+    // Get All Teachers
+    // ======================================
+
     @GetMapping
     public ResponseEntity<List<TeacherResponse>> getAllTeachers() {
 
-        return ResponseEntity.ok(teacherService.getAllTeachers());
+        return ResponseEntity.ok(
+                teacherService.getAllTeachers()
+        );
     }
+
+    // ======================================
+    // Get Teacher By ID
+    // ======================================
 
     @GetMapping("/{id}")
     public ResponseEntity<TeacherResponse> getTeacherById(
             @PathVariable Long id) {
 
-        return ResponseEntity.ok(teacherService.getTeacherById(id));
+        return ResponseEntity.ok(
+                teacherService.getTeacherById(id)
+        );
     }
+
+    // ======================================
+    // Update Teacher
+    // ======================================
 
     @PutMapping("/{id}")
     public ResponseEntity<TeacherResponse> updateTeacher(
@@ -51,12 +73,28 @@ public class TeacherController {
         );
     }
 
+    // ======================================
+    // Delete Teacher
+    // ======================================
+
     @DeleteMapping("/{id}")
     public ResponseEntity<String> deleteTeacher(
             @PathVariable Long id) {
 
         teacherService.deleteTeacher(id);
 
-        return ResponseEntity.ok("Teacher deleted successfully.");
+        return ResponseEntity.ok(
+                "Teacher deleted successfully."
+        );
+    }
+    @Autowired
+    private PasswordEncoder passwordEncoder;
+
+    @GetMapping("/test-password")
+    public String testPassword() {
+        String raw = "Teacher@123";
+        String hash = "$2a$10$cWuNeLbTtCBr8tkqU8PX.OOfCxDhKhmMxZCYRpQlkZkZ0SFE3bfom";
+
+        return String.valueOf(passwordEncoder.matches(raw, hash));
     }
 }

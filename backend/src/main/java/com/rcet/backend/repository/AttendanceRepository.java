@@ -1,32 +1,34 @@
 package com.rcet.backend.repository;
 
 import com.rcet.backend.entity.Attendance;
+import com.rcet.backend.entity.AttendanceSession;
 import com.rcet.backend.entity.Student;
-import com.rcet.backend.entity.TeacherSubject;
+import com.rcet.backend.enums.AttendanceStatus;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Repository;
 
-import java.time.LocalDate;
 import java.util.List;
+import java.util.Optional;
 
 @Repository
-public interface AttendanceRepository extends JpaRepository<Attendance, Long> {
+public interface AttendanceRepository
+        extends JpaRepository<Attendance, Long> {
 
-    boolean existsByStudentAndTeacherSubjectAndAttendanceDateAndLectureNumber(
+    List<Attendance> findByAttendanceSession(
+            AttendanceSession attendanceSession);
+
+    List<Attendance> findByStudent(
+            Student student);
+
+    List<Attendance> findByStudentAndAttendanceStatus(
             Student student,
-            TeacherSubject teacherSubject,
-            LocalDate attendanceDate,
-            Integer lectureNumber
-    );
+            AttendanceStatus attendanceStatus);
 
-    List<Attendance> findByStudent(Student student);
+    boolean existsByAttendanceSessionAndStudent(
+            AttendanceSession attendanceSession,
+            Student student);
 
-    List<Attendance> findByTeacherSubject(TeacherSubject teacherSubject);
-
-    List<Attendance> findByAttendanceDate(LocalDate attendanceDate);
-
-    List<Attendance> findByStudentAndAttendanceDate(
-            Student student,
-            LocalDate attendanceDate
-    );
+    Optional<Attendance> findByAttendanceSessionAndStudent(
+            AttendanceSession attendanceSession,
+            Student student);
 }

@@ -5,12 +5,17 @@ import com.rcet.backend.dto.response.TeacherResponse;
 import com.rcet.backend.entity.Branch;
 import com.rcet.backend.entity.Department;
 import com.rcet.backend.entity.Teacher;
+import com.rcet.backend.entity.User;
+import com.rcet.backend.enums.Role;
 import com.rcet.backend.exception.DuplicateResourceException;
 import com.rcet.backend.exception.ResourceNotFoundException;
+import com.rcet.backend.mapper.TeacherMapper;
 import com.rcet.backend.repository.BranchRepository;
 import com.rcet.backend.repository.DepartmentRepository;
 import com.rcet.backend.repository.TeacherRepository;
+import com.rcet.backend.repository.UserRepository;
 import com.rcet.backend.service.TeacherService;
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
@@ -20,183 +25,188 @@ import java.util.stream.Collectors;
 public class TeacherServiceImpl implements TeacherService {
 
     private final TeacherRepository teacherRepository;
+    private final UserRepository userRepository;
     private final DepartmentRepository departmentRepository;
     private final BranchRepository branchRepository;
+    private final PasswordEncoder passwordEncoder;
 
-    public TeacherServiceImpl(TeacherRepository teacherRepository,
-                              DepartmentRepository departmentRepository,
-                              BranchRepository branchRepository) {
+    public TeacherServiceImpl(
+            TeacherRepository teacherRepository,
+            UserRepository userRepository,
+            DepartmentRepository departmentRepository,
+            BranchRepository branchRepository,
+            PasswordEncoder passwordEncoder) {
 
         this.teacherRepository = teacherRepository;
+        this.userRepository = userRepository;
         this.departmentRepository = departmentRepository;
         this.branchRepository = branchRepository;
+        this.passwordEncoder = passwordEncoder;
     }
-    private void validateTeacher(TeacherRequest request) {
 
-        if (teacherRepository.existsByEmail(request.getEmail())) {
-            throw new DuplicateResourceException("Email already exists.");
-        }
-
-        if (teacherRepository.existsByPhone(request.getPhone())) {
-            throw new DuplicateResourceException("Phone already exists.");
-        }
-
-        if (teacherRepository.existsByEmployeeId(request.getEmployeeId())) {
-            throw new DuplicateResourceException("Employee ID already exists.");
-        }
-    }
     @Override
     public TeacherResponse createTeacher(TeacherRequest request) {
 
-        validateTeacher(request);
+        validateDuplicates(request);
 
-        Department department = departmentRepository.findById(request.getDepartmentId())
-                .orElseThrow(() ->
-                        new ResourceNotFoundException("Department not found."));
+        Department department = getDepartment(request.getDepartmentId());
 
-        Branch branch = branchRepository.findById(request.getBranchId())
-                .orElseThrow(() ->
-                        new ResourceNotFoundException("Branch not found."));
+        Branch branch = getBranch(request.getBranchId());
 
-        Teacher teacher = Teacher.builder()
-                .firstName(request.getFirstName())
-                .middleName(request.getMiddleName())
-                .lastName(request.getLastName())
-                .gender(request.getGender())
-                .dateOfBirth(request.getDateOfBirth())
-                .photoUrl(request.getPhotoUrl())
+        User user = User.builder()
                 .email(request.getEmail())
+                .password(passwordEncoder.encode(request.getPassword()))
                 .phone(request.getPhone())
-                .employeeId(request.getEmployeeId())
-                .qualification(request.getQualification())
-                .designation(request.getDesignation())
-                .status(request.getStatus())
-                .joiningDate(request.getJoiningDate())
-                .active(request.getActive() == null ? true : request.getActive())
-                .department(department)
-                .branch(branch)
+                .role(Role.TEACHER)
+                .enabled(true)
                 .build();
+
+        user = userRepository.save(user);
+
+        Teacher teacher = TeacherMapper.toEntity(request);
+
+        teacher.setDepartment(department);
+        teacher.setBranch(branch);
+        teacher.setUser(user);
 
         Teacher savedTeacher = teacherRepository.save(teacher);
 
-        return mapToResponse(savedTeacher);
+        return TeacherMapper.toResponse(savedTeacher);
     }
+
+    @Override
+    public TeacherResponse getTeacherById(Long id) {
+
+        return TeacherMapper.toResponse(getTeacher(id));
+    }
+
     @Override
     public List<TeacherResponse> getAllTeachers() {
 
         return teacherRepository.findAll()
                 .stream()
-                .map(this::mapToResponse)
+                .map(TeacherMapper::toResponse)
                 .collect(Collectors.toList());
     }
+
     @Override
-    public TeacherResponse getTeacherById(Long id) {
+    public TeacherResponse updateTeacher(
+            Long id,
+            TeacherRequest request) {
 
-        Teacher teacher = teacherRepository.findById(id)
-                .orElseThrow(() ->
-                        new ResourceNotFoundException("Teacher not found."));
+        Teacher teacher = getTeacher(id);
 
-        return mapToResponse(teacher);
-    }
-    @Override
-    public void deleteTeacher(Long id) {
+        if (!teacher.getEmail().equals(request.getEmail())
+                && teacherRepository.existsByEmail(request.getEmail())) {
 
-        Teacher teacher = teacherRepository.findById(id)
-                .orElseThrow(() ->
-                        new ResourceNotFoundException("Teacher not found."));
+            throw new DuplicateResourceException(
+                    "Email already exists.");
+        }
 
-        teacherRepository.delete(teacher);
-    }
-    @Override
-    public TeacherResponse updateTeacher(Long id, TeacherRequest request) {
+        if (!teacher.getPhone().equals(request.getPhone())
+                && teacherRepository.existsByPhone(request.getPhone())) {
 
-        Teacher teacher = teacherRepository.findById(id)
-                .orElseThrow(() ->
-                        new ResourceNotFoundException("Teacher not found."));
+            throw new DuplicateResourceException(
+                    "Phone number already exists.");
+        }
 
-        Department department = departmentRepository.findById(request.getDepartmentId())
-                .orElseThrow(() ->
-                        new ResourceNotFoundException("Department not found."));
+        if (!teacher.getEmployeeId().equals(request.getEmployeeId())
+                && teacherRepository.existsByEmployeeId(request.getEmployeeId())) {
 
-        Branch branch = branchRepository.findById(request.getBranchId())
-                .orElseThrow(() ->
-                        new ResourceNotFoundException("Branch not found."));
+            throw new DuplicateResourceException(
+                    "Employee ID already exists.");
+        }
 
-        teacherRepository.findByEmail(request.getEmail())
-                .ifPresent(existing -> {
-                    if (!existing.getId().equals(id)) {
-                        throw new DuplicateResourceException("Email already exists.");
-                    }
-                });
+        Department department = getDepartment(request.getDepartmentId());
 
-        teacherRepository.findByPhone(request.getPhone())
-                .ifPresent(existing -> {
-                    if (!existing.getId().equals(id)) {
-                        throw new DuplicateResourceException("Phone already exists.");
-                    }
-                });
+        Branch branch = getBranch(request.getBranchId());
 
-        teacherRepository.findByEmployeeId(request.getEmployeeId())
-                .ifPresent(existing -> {
-                    if (!existing.getId().equals(id)) {
-                        throw new DuplicateResourceException("Employee ID already exists.");
-                    }
-                });
-
-        teacher.setFirstName(request.getFirstName());
-        teacher.setMiddleName(request.getMiddleName());
-        teacher.setLastName(request.getLastName());
-        teacher.setGender(request.getGender());
-        teacher.setDateOfBirth(request.getDateOfBirth());
-        teacher.setPhotoUrl(request.getPhotoUrl());
-
-        teacher.setEmail(request.getEmail());
-        teacher.setPhone(request.getPhone());
-
-        teacher.setEmployeeId(request.getEmployeeId());
-        teacher.setQualification(request.getQualification());
-        teacher.setDesignation(request.getDesignation());
-        teacher.setStatus(request.getStatus());
-        teacher.setJoiningDate(request.getJoiningDate());
-
-        teacher.setActive(request.getActive());
+        TeacherMapper.updateEntity(teacher, request);
 
         teacher.setDepartment(department);
         teacher.setBranch(branch);
 
+        User user = teacher.getUser();
+
+        user.setEmail(request.getEmail());
+        user.setPhone(request.getPhone());
+
+        if (request.getPassword() != null &&
+                !request.getPassword().isBlank()) {
+
+            user.setPassword(
+                    passwordEncoder.encode(request.getPassword()));
+        }
+
+        userRepository.save(user);
+
         Teacher updatedTeacher = teacherRepository.save(teacher);
 
-        return mapToResponse(updatedTeacher);
+        return TeacherMapper.toResponse(updatedTeacher);
     }
-    private TeacherResponse mapToResponse(Teacher teacher) {
 
-        return TeacherResponse.builder()
-                .id(teacher.getId())
+    @Override
+    public void deleteTeacher(Long id) {
 
-                .firstName(teacher.getFirstName())
-                .middleName(teacher.getMiddleName())
-                .lastName(teacher.getLastName())
-                .gender(teacher.getGender())
-                .dateOfBirth(teacher.getDateOfBirth())
-                .photoUrl(teacher.getPhotoUrl())
+        Teacher teacher = getTeacher(id);
 
-                .email(teacher.getEmail())
-                .phone(teacher.getPhone())
+        User user = teacher.getUser();
 
-                .employeeId(teacher.getEmployeeId())
-                .qualification(teacher.getQualification())
-                .designation(teacher.getDesignation())
-                .status(teacher.getStatus())
-                .joiningDate(teacher.getJoiningDate())
+        teacherRepository.delete(teacher);
 
-                .departmentId(teacher.getDepartment().getId())
-                .departmentName(teacher.getDepartment().getName())
+        userRepository.delete(user);
+    }
 
-                .branchId(teacher.getBranch().getId())
-                .branchName(teacher.getBranch().getName())
+    // ===================================================
+    // Helper Methods
+    // ===================================================
 
-                .active(teacher.getActive())
+    private Teacher getTeacher(Long id) {
 
-                .build();
+        return teacherRepository.findById(id)
+                .orElseThrow(() ->
+                        new ResourceNotFoundException(
+                                "Teacher not found."));
+    }
+
+    private Department getDepartment(Long id) {
+
+        return departmentRepository.findById(id)
+                .orElseThrow(() ->
+                        new ResourceNotFoundException(
+                                "Department not found."));
+    }
+
+    private Branch getBranch(Long id) {
+
+        return branchRepository.findById(id)
+                .orElseThrow(() ->
+                        new ResourceNotFoundException(
+                                "Branch not found."));
+    }
+
+    private void validateDuplicates(
+            TeacherRequest request) {
+
+        if (teacherRepository.existsByEmail(request.getEmail())
+                || userRepository.existsByEmail(request.getEmail())) {
+
+            throw new DuplicateResourceException(
+                    "Email already exists.");
+        }
+
+        if (teacherRepository.existsByPhone(request.getPhone())
+                || userRepository.existsByPhone(request.getPhone())) {
+
+            throw new DuplicateResourceException(
+                    "Phone number already exists.");
+        }
+
+        if (teacherRepository.existsByEmployeeId(
+                request.getEmployeeId())) {
+
+            throw new DuplicateResourceException(
+                    "Employee ID already exists.");
+        }
     }
 }

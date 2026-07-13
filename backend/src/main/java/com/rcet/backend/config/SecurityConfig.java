@@ -21,9 +21,10 @@ public class SecurityConfig {
     private final PasswordEncoder passwordEncoder;
     private final JwtAuthenticationFilter jwtAuthenticationFilter;
 
-    public SecurityConfig(CustomUserDetailsService userDetailsService,
-                          PasswordEncoder passwordEncoder,
-                          JwtAuthenticationFilter jwtAuthenticationFilter) {
+    public SecurityConfig(
+            CustomUserDetailsService userDetailsService,
+            PasswordEncoder passwordEncoder,
+            JwtAuthenticationFilter jwtAuthenticationFilter) {
 
         this.userDetailsService = userDetailsService;
         this.passwordEncoder = passwordEncoder;
@@ -31,23 +32,54 @@ public class SecurityConfig {
     }
 
     @Bean
-    public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
+    public SecurityFilterChain securityFilterChain(HttpSecurity http)
+            throws Exception {
 
         http
                 .csrf(csrf -> csrf.disable())
 
                 .sessionManagement(session ->
-                        session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
+                        session.sessionCreationPolicy(
+                                SessionCreationPolicy.STATELESS))
 
                 .authorizeHttpRequests(auth -> auth
-                        .requestMatchers("/api/auth/**").permitAll()
-                        .anyRequest().authenticated()
+
+                        // Public Endpoints
+                        .requestMatchers(
+                                "/api/auth/**",
+
+                                "/swagger-ui/**",
+                                "/swagger-ui.html",
+
+                                "/v3/api-docs/**",
+                                "/v3/api-docs",
+
+                                "/webjars/**"
+                        ).permitAll()
+
+                        // Admin APIs
+                        .requestMatchers("/api/admin/**")
+                        .hasRole("ADMIN")
+
+                        // Teacher APIs
+                        .requestMatchers("/api/teacher/**")
+                        .hasRole("TEACHER")
+
+                        // Student APIs
+                        .requestMatchers("/api/student/**")
+                        .hasRole("STUDENT")
+
+                        // Everything else
+                        .anyRequest()
+                        .authenticated()
                 )
 
                 .authenticationProvider(authenticationProvider())
 
-                .addFilterBefore(jwtAuthenticationFilter,
-                        UsernamePasswordAuthenticationFilter.class);
+                .addFilterBefore(
+                        jwtAuthenticationFilter,
+                        UsernamePasswordAuthenticationFilter.class
+                );
 
         return http.build();
     }
@@ -55,7 +87,8 @@ public class SecurityConfig {
     @Bean
     public AuthenticationProvider authenticationProvider() {
 
-        DaoAuthenticationProvider provider = new DaoAuthenticationProvider();
+        DaoAuthenticationProvider provider =
+                new DaoAuthenticationProvider();
 
         provider.setUserDetailsService(userDetailsService);
         provider.setPasswordEncoder(passwordEncoder);
@@ -65,7 +98,8 @@ public class SecurityConfig {
 
     @Bean
     public AuthenticationManager authenticationManager(
-            AuthenticationConfiguration configuration) throws Exception {
+            AuthenticationConfiguration configuration)
+            throws Exception {
 
         return configuration.getAuthenticationManager();
     }

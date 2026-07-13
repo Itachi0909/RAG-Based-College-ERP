@@ -2,24 +2,54 @@ package com.rcet.backend.dto.response;
 
 import lombok.AllArgsConstructor;
 import lombok.Builder;
-import lombok.Data;
+import lombok.Getter;
 import lombok.NoArgsConstructor;
+import lombok.Setter;
 
-@Data
-@Builder
+@Getter
+@Setter
 @NoArgsConstructor
 @AllArgsConstructor
+@Builder
 public class TeacherSubjectResponse {
 
     private Long id;
 
-    // Teacher Details
+    // Teacher
+
     private Long teacherId;
+
     private String employeeId;
+
     private String teacherName;
 
-    // Subject Details
+    // Semester Subject
+
+    private Long semesterSubjectId;
+
+    // Semester
+
+    private Long semesterId;
+
+    private Integer semesterNumber;
+
+    // Subject
+
     private Long subjectId;
+
     private String subjectCode;
+
     private String subjectName;
+
+    // Branch
+
+    private Long branchId;
+
+    private String branchName;
+
+    // Department
+
+    private Long departmentId;
+
+    private String departmentName;
 }
