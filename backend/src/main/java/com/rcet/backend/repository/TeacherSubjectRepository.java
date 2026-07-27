@@ -7,6 +7,7 @@ import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Repository;
 
 import java.util.List;
+import java.util.Optional;
 
 @Repository
 public interface TeacherSubjectRepository
@@ -21,4 +22,8 @@ public interface TeacherSubjectRepository
 
     List<TeacherSubject> findBySemesterSubject(
             SemesterSubject semesterSubject);
+
+    Optional<TeacherSubject> findByIdAndTeacher(
+            Long id,
+            Teacher teacher);
 }

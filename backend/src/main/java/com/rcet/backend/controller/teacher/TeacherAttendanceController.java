@@ -11,6 +11,8 @@ import com.rcet.backend.service.AttendanceSessionService;
 import jakarta.validation.Valid;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+import com.rcet.backend.entity.Teacher;
+import com.rcet.backend.security.service.AuthenticatedUserService;
 
 import java.util.List;
 
@@ -20,13 +22,16 @@ public class TeacherAttendanceController {
 
     private final AttendanceSessionService attendanceSessionService;
     private final AttendanceService attendanceService;
+    private final AuthenticatedUserService authenticatedUserService;
 
     public TeacherAttendanceController(
             AttendanceSessionService attendanceSessionService,
-            AttendanceService attendanceService) {
+            AttendanceService attendanceService,
+            AuthenticatedUserService authenticatedUserService) {
 
         this.attendanceSessionService = attendanceSessionService;
         this.attendanceService = attendanceService;
+        this.authenticatedUserService = authenticatedUserService;
     }
 
     // ==========================================
@@ -54,8 +59,14 @@ public class TeacherAttendanceController {
     @GetMapping("/sessions")
     public ResponseEntity<List<AttendanceSessionResponse>> getAllSessions() {
 
+        Teacher teacher =
+                authenticatedUserService.getCurrentTeacher();
+
         return ResponseEntity.ok(
-                attendanceSessionService.getAllAttendanceSessions()
+                attendanceSessionService
+                        .getAttendanceSessionsByTeacher(
+                                teacher.getId()
+                        )
         );
     }
     @GetMapping("/session/{sessionId}/students")

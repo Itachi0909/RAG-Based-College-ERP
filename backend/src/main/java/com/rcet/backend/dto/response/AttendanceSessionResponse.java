@@ -31,7 +31,6 @@ public class AttendanceSessionResponse {
 
     private AttendanceSessionStatus status;
 
-    private boolean active;
 
     public AttendanceSessionResponse() {
     }
@@ -48,8 +47,7 @@ public class AttendanceSessionResponse {
             LocalTime endTime,
             String topic,
             String remarks,
-            AttendanceSessionStatus status,
-            boolean active) {
+            AttendanceSessionStatus status) {
 
         this.id = id;
         this.teacherSubjectId = teacherSubjectId;
@@ -63,7 +61,6 @@ public class AttendanceSessionResponse {
         this.topic = topic;
         this.remarks = remarks;
         this.status = status;
-        this.active = active;
     }
 
     public Long getId() {
@@ -114,9 +111,6 @@ public class AttendanceSessionResponse {
         return status;
     }
 
-    public boolean isActive() {
-        return active;
-    }
 
     public void setId(Long id) {
         this.id = id;
@@ -166,7 +160,4 @@ public class AttendanceSessionResponse {
         this.status = status;
     }
 
-    public void setActive(boolean active) {
-        this.active = active;
-    }
 }

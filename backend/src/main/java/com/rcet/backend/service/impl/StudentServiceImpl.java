@@ -56,6 +56,12 @@ public class StudentServiceImpl implements StudentService {
         Branch branch = getBranch(request.getBranchId());
         Semester semester = getSemester(request.getSemesterId());
 
+        // Validate that semester belongs to the selected branch
+        if (!semester.getBranch().getId().equals(branch.getId())) {
+            throw new IllegalArgumentException(
+                    "Selected semester does not belong to the selected branch.");
+        }
+
         User user = User.builder()
                 .email(request.getEmail())
                 .password(passwordEncoder.encode(request.getPassword()))
@@ -94,7 +100,7 @@ public class StudentServiceImpl implements StudentService {
     @Override
     public List<StudentResponse> getAllStudents() {
 
-        return studentRepository.findAll()
+        return studentRepository.findByActiveTrue()
                 .stream()
                 .map(StudentMapper::toResponse)
                 .collect(Collectors.toList());
@@ -149,6 +155,12 @@ public class StudentServiceImpl implements StudentService {
         Branch branch = getBranch(request.getBranchId());
         Semester semester = getSemester(request.getSemesterId());
 
+        // Validate that semester belongs to the selected branch
+        if (!semester.getBranch().getId().equals(branch.getId())) {
+            throw new IllegalArgumentException(
+                    "Selected semester does not belong to the selected branch.");
+        }
+
         StudentMapper.updateEntity(student, request);
 
         student.setBranch(branch);
@@ -185,9 +197,12 @@ public class StudentServiceImpl implements StudentService {
 
         User user = student.getUser();
 
-        studentRepository.delete(student);
+        student.setActive(false);
 
-        userRepository.delete(user);
+        user.setEnabled(false);
+
+        studentRepository.save(student);
+        userRepository.save(user);
     }
 
     // ===========================================
@@ -196,7 +211,7 @@ public class StudentServiceImpl implements StudentService {
 
     private Student getStudent(Long id) {
 
-        return studentRepository.findById(id)
+        return studentRepository.findByIdAndActiveTrue(id)
                 .orElseThrow(() ->
                         new ResourceNotFoundException(
                                 "Student not found."));

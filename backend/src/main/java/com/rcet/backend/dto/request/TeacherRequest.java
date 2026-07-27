@@ -5,6 +5,8 @@ import com.rcet.backend.entity.Gender;
 import com.rcet.backend.entity.TeacherStatus;
 import jakarta.validation.constraints.*;
 import lombok.*;
+import jakarta.validation.constraints.Past;
+import jakarta.validation.constraints.PastOrPresent;
 
 import java.time.LocalDate;
 
@@ -43,6 +45,7 @@ public class TeacherRequest {
     private Gender gender;
 
     @NotNull(message = "Date of birth is required")
+    @Past(message = "Date of birth must be in the past.")
     private LocalDate dateOfBirth;
 
     private String photoUrl;
@@ -52,11 +55,16 @@ public class TeacherRequest {
     // ==========================
 
     @NotBlank(message = "Phone number is required")
+    @Pattern(
+            regexp = "^[6-9]\\d{9}$",
+            message = "Phone number must be a valid 10-digit Indian mobile number."
+    )
     private String phone;
 
     // ==========================
     // Professional Information
     // ==========================
+
 
     @NotBlank(message = "Employee ID is required")
     private String employeeId;
@@ -71,6 +79,7 @@ public class TeacherRequest {
     private TeacherStatus status;
 
     @NotNull(message = "Joining date is required")
+    @PastOrPresent(message = "Joining date cannot be in the future.")
     private LocalDate joiningDate;
 
     // ==========================

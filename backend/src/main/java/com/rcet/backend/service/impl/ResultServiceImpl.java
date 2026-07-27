@@ -5,12 +5,13 @@ import com.rcet.backend.dto.response.SubjectResultResponse;
 import com.rcet.backend.entity.Marks;
 import com.rcet.backend.entity.Semester;
 import com.rcet.backend.entity.Student;
+import com.rcet.backend.exception.ResourceNotFoundException;
 import com.rcet.backend.repository.MarksRepository;
 import com.rcet.backend.repository.SemesterRepository;
 import com.rcet.backend.repository.StudentRepository;
+import com.rcet.backend.security.service.AuthenticatedUserService;
 import com.rcet.backend.service.ResultService;
 import com.rcet.backend.util.GradeUtil;
-import com.rcet.backend.exception.ResourceNotFoundException;
 import org.springframework.stereotype.Service;
 
 import java.util.*;
@@ -22,16 +23,35 @@ public class ResultServiceImpl implements ResultService {
     private final StudentRepository studentRepository;
     private final SemesterRepository semesterRepository;
     private final MarksRepository marksRepository;
+    private final AuthenticatedUserService authenticatedUserService;
 
     public ResultServiceImpl(
             StudentRepository studentRepository,
             SemesterRepository semesterRepository,
-            MarksRepository marksRepository) {
+            MarksRepository marksRepository,
+            AuthenticatedUserService authenticatedUserService) {
 
         this.studentRepository = studentRepository;
         this.semesterRepository = semesterRepository;
         this.marksRepository = marksRepository;
+        this.authenticatedUserService = authenticatedUserService;
     }
+
+    // ======================================================
+    // Student API
+    // ======================================================
+
+    @Override
+    public ResultResponse generateResult(Long semesterId) {
+
+        Student student = authenticatedUserService.getCurrentStudent();
+
+        return generateResult(student.getId(), semesterId);
+    }
+
+    // ======================================================
+    // Internal Method (Transcript/Admin)
+    // ======================================================
 
     @Override
     public ResultResponse generateResult(
@@ -49,8 +69,7 @@ public class ResultServiceImpl implements ResultService {
         List<Marks> marksList =
                 marksRepository.findByStudentAndSemester(
                         studentId,
-                        semesterId
-                );
+                        semesterId);
 
         if (marksList.isEmpty()) {
             throw new ResourceNotFoundException(
@@ -99,31 +118,41 @@ public class ResultServiceImpl implements ResultService {
         }
 
         double percentage =
-                (totalObtained / totalMaximum) * 100;
+                totalMaximum == 0
+                        ? 0
+                        : (totalObtained / totalMaximum) * 100;
 
         double sgpa =
-                totalCreditPoints / totalCredits;
+                totalCredits == 0
+                        ? 0
+                        : totalCreditPoints / totalCredits;
 
         return ResultResponse.builder()
 
                 .studentId(student.getId())
+
                 .enrollmentNumber(student.getEnrollmentNumber())
+
                 .studentName(
                         student.getFirstName()
                                 + " "
                                 + student.getLastName())
 
                 .semesterId(semester.getId())
+
                 .semesterNumber(semester.getSemesterNumber())
 
                 .subjects(subjectResults)
 
                 .totalMaximumMarks(totalMaximum)
+
                 .totalObtainedMarks(totalObtained)
-                .percentage(percentage)
 
-                .sgpa(sgpa)
+                .percentage(
+                        Math.round(percentage * 100.0) / 100.0)
 
+                .sgpa(
+                        Math.round(sgpa * 100.0) / 100.0)
 
                 .grade(
                         GradeUtil.getGrade(percentage))
@@ -132,6 +161,10 @@ public class ResultServiceImpl implements ResultService {
 
                 .build();
     }
+
+    // ======================================================
+    // Helper Method
+    // ======================================================
 
     private SubjectResultResponse buildSubjectResult(
             List<Marks> marksList) {
@@ -148,7 +181,9 @@ public class ResultServiceImpl implements ResultService {
         }
 
         double percentage =
-                (obtainedMarks / maximumMarks) * 100;
+                maximumMarks == 0
+                        ? 0
+                        : (obtainedMarks / maximumMarks) * 100;
 
         String grade = GradeUtil.getGrade(percentage);
 
@@ -186,7 +221,8 @@ public class ResultServiceImpl implements ResultService {
 
                 .obtainedMarks(obtainedMarks)
 
-                .percentage(percentage)
+                .percentage(
+                        Math.round(percentage * 100.0) / 100.0)
 
                 .grade(grade)
 

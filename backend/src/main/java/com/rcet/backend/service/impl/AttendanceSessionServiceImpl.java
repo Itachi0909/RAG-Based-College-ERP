@@ -9,12 +9,10 @@ import com.rcet.backend.enums.AttendanceSessionStatus;
 import com.rcet.backend.exception.ResourceNotFoundException;
 import com.rcet.backend.mapper.AttendanceMapper;
 import com.rcet.backend.repository.AttendanceSessionRepository;
-import com.rcet.backend.repository.TeacherRepository;
 import com.rcet.backend.repository.TeacherSubjectRepository;
+import com.rcet.backend.security.service.AuthenticatedUserService;
 import com.rcet.backend.service.AttendanceSessionService;
 import jakarta.transaction.Transactional;
-import org.springframework.security.core.Authentication;
-import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
@@ -26,34 +24,24 @@ public class AttendanceSessionServiceImpl
 
     private final AttendanceSessionRepository attendanceSessionRepository;
     private final TeacherSubjectRepository teacherSubjectRepository;
-    private final TeacherRepository teacherRepository;
+    private final AuthenticatedUserService authenticatedUserService;
 
     public AttendanceSessionServiceImpl(
             AttendanceSessionRepository attendanceSessionRepository,
             TeacherSubjectRepository teacherSubjectRepository,
-            TeacherRepository teacherRepository) {
+            AuthenticatedUserService authenticatedUserService) {
 
         this.attendanceSessionRepository = attendanceSessionRepository;
         this.teacherSubjectRepository = teacherSubjectRepository;
-        this.teacherRepository = teacherRepository;
+        this.authenticatedUserService = authenticatedUserService;
     }
 
     @Override
     public AttendanceSessionResponse createAttendanceSession(
             AttendanceSessionRequest request) {
 
-        Authentication authentication =
-                SecurityContextHolder
-                        .getContext()
-                        .getAuthentication();
-
-        String email = authentication.getName();
-
-        Teacher teacher = teacherRepository
-                .findByEmail(email)
-                .orElseThrow(() ->
-                        new ResourceNotFoundException(
-                                "Teacher not found"));
+        Teacher teacher =
+                authenticatedUserService.getCurrentTeacher();
 
         TeacherSubject teacherSubject =
                 teacherSubjectRepository
@@ -78,11 +66,8 @@ public class AttendanceSessionServiceImpl
         session.setEndTime(request.getEndTime());
         session.setTopic(request.getTopic());
         session.setRemarks(request.getRemarks());
-
         session.setStatus(
                 AttendanceSessionStatus.SCHEDULED);
-
-        session.setActive(true);
 
         attendanceSessionRepository.save(session);
 

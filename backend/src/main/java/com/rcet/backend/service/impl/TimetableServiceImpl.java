@@ -14,7 +14,7 @@ import com.rcet.backend.repository.TeacherSubjectRepository;
 import com.rcet.backend.repository.TimetableRepository;
 import com.rcet.backend.service.TimetableService;
 import org.springframework.stereotype.Service;
-
+import com.rcet.backend.security.service.AuthenticatedUserService;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -25,17 +25,20 @@ public class TimetableServiceImpl implements TimetableService {
     private final TeacherSubjectRepository teacherSubjectRepository;
     private final StudentRepository studentRepository;
     private final TeacherRepository teacherRepository;
+    private final AuthenticatedUserService authenticatedUserService;
 
     public TimetableServiceImpl(
             TimetableRepository timetableRepository,
             TeacherSubjectRepository teacherSubjectRepository,
             StudentRepository studentRepository,
-            TeacherRepository teacherRepository) {
+            TeacherRepository teacherRepository,
+            AuthenticatedUserService authenticatedUserService) {
 
         this.timetableRepository = timetableRepository;
         this.teacherSubjectRepository = teacherSubjectRepository;
         this.studentRepository = studentRepository;
         this.teacherRepository = teacherRepository;
+        this.authenticatedUserService = authenticatedUserService;
     }
 
     @Override
@@ -48,6 +51,7 @@ public class TimetableServiceImpl implements TimetableService {
                         .orElseThrow(() ->
                                 new ResourceNotFoundException(
                                         "Teacher Subject not found."));
+
 
         if (timetableRepository
                 .existsByTeacherSubjectAndDayOfWeekAndStartTime(
@@ -94,7 +98,7 @@ public class TimetableServiceImpl implements TimetableService {
     public TimetableResponse getTimetableById(Long id) {
 
         Timetable timetable =
-                timetableRepository.findById(id)
+                timetableRepository.findByIdAndActiveTrue(id)
                         .orElseThrow(() ->
                                 new ResourceNotFoundException(
                                         "Timetable not found."));
@@ -107,10 +111,11 @@ public class TimetableServiceImpl implements TimetableService {
             Long id,
             TimetableRequest request) {
 
-        Timetable timetable = timetableRepository.findById(id)
-                .orElseThrow(() ->
-                        new ResourceNotFoundException(
-                                "Timetable not found."));
+        Timetable timetable =
+                timetableRepository.findByIdAndActiveTrue(id)
+                        .orElseThrow(() ->
+                                new ResourceNotFoundException(
+                                        "Timetable not found."));
 
         TeacherSubject teacherSubject =
                 teacherSubjectRepository.findById(
@@ -119,8 +124,9 @@ public class TimetableServiceImpl implements TimetableService {
                                 new ResourceNotFoundException(
                                         "Teacher Subject not found."));
 
-        timetableRepository
-                .findByTeacherSubject(teacherSubject)
+
+
+        timetableRepository.findByTeacherSubjectAndActiveTrue(teacherSubject)
                 .stream()
                 .filter(existing ->
                         existing.getDayOfWeek() == request.getDayOfWeek()
@@ -149,12 +155,16 @@ public class TimetableServiceImpl implements TimetableService {
     public void deleteTimetable(Long id) {
 
         Timetable timetable =
-                timetableRepository.findById(id)
+                timetableRepository.findByIdAndActiveTrue(id)
                         .orElseThrow(() ->
                                 new ResourceNotFoundException(
                                         "Timetable not found."));
 
-        timetableRepository.delete(timetable);
+
+
+        timetable.setActive(false);
+
+        timetableRepository.save(timetable);
     }
 
     @Override
@@ -167,8 +177,21 @@ public class TimetableServiceImpl implements TimetableService {
                                 new ResourceNotFoundException(
                                         "Student not found."));
 
+        return timetableRepository.findByTeacherSubject_SemesterSubject_SemesterAndActiveTrue(
+                        student.getSemester())
+                .stream()
+                .map(this::mapToResponse)
+                .collect(Collectors.toList());
+    }
+
+    @Override
+    public List<TimetableResponse> getCurrentStudentTimetable() {
+
+        Student student =
+                authenticatedUserService.getCurrentStudent();
+
         return timetableRepository
-                .findByTeacherSubject_SemesterSubject_Semester(
+                .findByTeacherSubject_SemesterSubject_SemesterAndActiveTrue(
                         student.getSemester())
                 .stream()
                 .map(this::mapToResponse)
@@ -185,8 +208,22 @@ public class TimetableServiceImpl implements TimetableService {
                                 new ResourceNotFoundException(
                                         "Teacher not found."));
 
+        return timetableRepository.findByTeacherSubject_TeacherAndActiveTrue(
+                        teacher)
+                .stream()
+                .map(this::mapToResponse)
+                .collect(Collectors.toList());
+    }
+
+    @Override
+    public List<TimetableResponse> getCurrentTeacherTimetable() {
+
+        Teacher teacher =
+                authenticatedUserService.getCurrentTeacher();
+
         return timetableRepository
-                .findByTeacherSubject_Teacher(teacher)
+                .findByTeacherSubject_TeacherAndActiveTrue(
+                        teacher)
                 .stream()
                 .map(this::mapToResponse)
                 .collect(Collectors.toList());
@@ -196,8 +233,8 @@ public class TimetableServiceImpl implements TimetableService {
     public List<TimetableResponse> getTimetableBySemester(
             Long semesterId) {
 
-        return timetableRepository
-                .findByTeacherSubject_SemesterSubject_Semester_Id(semesterId)
+        return timetableRepository.findByTeacherSubject_SemesterSubject_Semester_IdAndActiveTrue(
+                        semesterId)
                 .stream()
                 .map(this::mapToResponse)
                 .collect(Collectors.toList());

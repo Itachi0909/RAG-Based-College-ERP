@@ -4,8 +4,6 @@ import com.rcet.backend.dto.response.TranscriptResponse;
 
 public interface TranscriptService {
 
-    TranscriptResponse generateTranscript(
-            Long studentId
-    );
+    TranscriptResponse generateTranscript();
 
 }

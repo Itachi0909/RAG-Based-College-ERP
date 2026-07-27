@@ -56,9 +56,15 @@ public class SemesterSubjectServiceImpl implements SemesterSubjectService {
         semesterSubject.setExternalMarks(request.getExternalMarks());
         semesterSubject.setPassingMarks(request.getPassingMarks());
 
-        semesterSubject.setTotalMarks(
-                request.getInternalMarks()
-                        + request.getExternalMarks());
+        int totalMarks =
+                request.getInternalMarks() + request.getExternalMarks();
+
+        if (request.getPassingMarks() > totalMarks) {
+            throw new IllegalArgumentException(
+                    "Passing marks cannot exceed total marks.");
+        }
+
+        semesterSubject.setTotalMarks(totalMarks);
 
         semesterSubject.setActive(true);
 
@@ -71,7 +77,7 @@ public class SemesterSubjectServiceImpl implements SemesterSubjectService {
     @Override
     public List<SemesterSubjectResponse> getAllSemesterSubjects() {
 
-        return semesterSubjectRepository.findAll()
+        return semesterSubjectRepository.findByActiveTrue()
                 .stream()
                 .map(this::mapToResponse)
                 .collect(Collectors.toList());
@@ -112,9 +118,15 @@ public class SemesterSubjectServiceImpl implements SemesterSubjectService {
         semesterSubject.setExternalMarks(request.getExternalMarks());
         semesterSubject.setPassingMarks(request.getPassingMarks());
 
-        semesterSubject.setTotalMarks(
-                request.getInternalMarks()
-                        + request.getExternalMarks());
+        int totalMarks =
+                request.getInternalMarks() + request.getExternalMarks();
+
+        if (request.getPassingMarks() > totalMarks) {
+            throw new IllegalArgumentException(
+                    "Passing marks cannot exceed total marks.");
+        }
+
+        semesterSubject.setTotalMarks(totalMarks);
 
         SemesterSubject updated =
                 semesterSubjectRepository.save(semesterSubject);
@@ -125,7 +137,11 @@ public class SemesterSubjectServiceImpl implements SemesterSubjectService {
     @Override
     public void deleteSemesterSubject(Long id) {
 
-        semesterSubjectRepository.delete(getSemesterSubject(id));
+        SemesterSubject semesterSubject = getSemesterSubject(id);
+
+        semesterSubject.setActive(false);
+
+        semesterSubjectRepository.save(semesterSubject);
     }
 
     // ==========================
@@ -150,7 +166,7 @@ public class SemesterSubjectServiceImpl implements SemesterSubjectService {
 
     private SemesterSubject getSemesterSubject(Long id) {
 
-        return semesterSubjectRepository.findById(id)
+        return semesterSubjectRepository.findByIdAndActiveTrue(id)
                 .orElseThrow(() ->
                         new ResourceNotFoundException(
                                 "Semester Subject mapping not found."));

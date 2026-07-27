@@ -25,8 +25,7 @@ public interface FeeService {
             Long id,
             FeePaymentRequest request);
 
-    List<FeeResponse> getStudentFees(
-            Long studentId);
+    List<FeeResponse> getStudentFees();
 
     void deleteFee(
             Long id);

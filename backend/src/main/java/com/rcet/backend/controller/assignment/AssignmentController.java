@@ -11,7 +11,7 @@ import org.springframework.web.bind.annotation.*;
 import java.util.List;
 
 @RestController
-@RequestMapping("/api/assignments")
+@RequestMapping("/api/teacher/assignments")
 public class AssignmentController {
 
     private final AssignmentService assignmentService;
@@ -64,21 +64,19 @@ public class AssignmentController {
                 "Assignment deleted successfully.");
     }
 
-    @GetMapping("/student/{studentId}")
+    @GetMapping("/student")
     public ResponseEntity<List<AssignmentResponse>>
-    getAssignmentsByStudent(
-            @PathVariable Long studentId) {
+    getAssignmentsByStudent() {
 
         return ResponseEntity.ok(
-                assignmentService.getAssignmentsByStudent(studentId));
+                assignmentService.getAssignmentsByStudent());
     }
 
-    @GetMapping("/teacher/{teacherId}")
+    @GetMapping("/teacher")
     public ResponseEntity<List<AssignmentResponse>>
-    getAssignmentsByTeacher(
-            @PathVariable Long teacherId) {
+    getAssignmentsByTeacher() {
 
         return ResponseEntity.ok(
-                assignmentService.getAssignmentsByTeacher(teacherId));
+                assignmentService.getAssignmentsByTeacher());
     }
 }

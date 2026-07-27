@@ -11,8 +11,7 @@ public interface AssignmentSubmissionService {
     AssignmentSubmissionResponse submitAssignment(
             AssignmentSubmissionRequest request);
 
-    List<AssignmentSubmissionResponse> getStudentSubmissions(
-            Long studentId);
+    List<AssignmentSubmissionResponse> getStudentSubmissions();
 
     List<AssignmentSubmissionResponse> getAssignmentSubmissions(
             Long assignmentId);

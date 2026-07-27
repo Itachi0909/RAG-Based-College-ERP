@@ -14,7 +14,7 @@ import com.rcet.backend.repository.SemesterRepository;
 import com.rcet.backend.repository.StudentRepository;
 import com.rcet.backend.service.FeeService;
 import org.springframework.stereotype.Service;
-
+import com.rcet.backend.security.service.AuthenticatedUserService;
 import java.math.BigDecimal;
 import java.time.LocalDate;
 import java.util.List;
@@ -26,15 +26,18 @@ public class FeeServiceImpl implements FeeService {
     private final FeeRepository feeRepository;
     private final StudentRepository studentRepository;
     private final SemesterRepository semesterRepository;
+    private final AuthenticatedUserService authenticatedUserService;
 
     public FeeServiceImpl(
             FeeRepository feeRepository,
             StudentRepository studentRepository,
-            SemesterRepository semesterRepository) {
+            SemesterRepository semesterRepository,
+            AuthenticatedUserService authenticatedUserService) {
 
         this.feeRepository = feeRepository;
         this.studentRepository = studentRepository;
         this.semesterRepository = semesterRepository;
+        this.authenticatedUserService = authenticatedUserService;
     }
 
     @Override
@@ -52,6 +55,10 @@ public class FeeServiceImpl implements FeeService {
                 .orElseThrow(() ->
                         new ResourceNotFoundException(
                                 "Semester not found."));
+        if (!student.getSemester().getId().equals(semester.getId())) {
+            throw new IllegalArgumentException(
+                    "Student does not belong to the selected semester.");
+        }
 
         if (feeRepository.existsByStudentAndSemester(
                 student,
@@ -123,6 +130,11 @@ public class FeeServiceImpl implements FeeService {
                         new ResourceNotFoundException(
                                 "Semester not found."));
 
+        if (!student.getSemester().getId().equals(semester.getId())) {
+            throw new IllegalArgumentException(
+                    "Student does not belong to the selected semester.");
+        }
+
         feeRepository.findByStudentAndSemester(student, semester)
                 .ifPresent(existing -> {
                     if (!existing.getId().equals(id)) {
@@ -186,13 +198,10 @@ public class FeeServiceImpl implements FeeService {
     }
 
     @Override
-    public List<FeeResponse> getStudentFees(
-            Long studentId) {
+    public List<FeeResponse> getStudentFees() {
 
-        Student student = studentRepository.findById(studentId)
-                .orElseThrow(() ->
-                        new ResourceNotFoundException(
-                                "Student not found."));
+        Student student =
+                authenticatedUserService.getCurrentStudent();
 
         return feeRepository.findByStudentAndActiveTrue(student)
                 .stream()

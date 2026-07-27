@@ -48,6 +48,13 @@ public class TeacherSubjectServiceImpl
         SemesterSubject semesterSubject =
                 getSemesterSubject(request.getSemesterSubjectId());
 
+        if (!teacher.getBranch().getId().equals(
+                semesterSubject.getSemester().getBranch().getId())) {
+
+            throw new IllegalArgumentException(
+                    "Teacher and Semester Subject must belong to the same branch.");
+        }
+
         if (teacherSubjectRepository.existsByTeacherAndSemesterSubject(
                 teacher,
                 semesterSubject)) {
@@ -111,6 +118,13 @@ public class TeacherSubjectServiceImpl
 
         SemesterSubject semesterSubject =
                 getSemesterSubject(request.getSemesterSubjectId());
+
+        if (!teacher.getBranch().getId().equals(
+                semesterSubject.getSemester().getBranch().getId())) {
+
+            throw new IllegalArgumentException(
+                    "Teacher and Semester Subject must belong to the same branch.");
+        }
 
         if ((!teacherSubject.getTeacher().equals(teacher))
                 || (!teacherSubject.getSemesterSubject()

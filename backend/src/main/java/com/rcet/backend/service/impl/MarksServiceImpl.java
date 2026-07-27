@@ -4,6 +4,7 @@ import com.rcet.backend.dto.request.MarksRequest;
 import com.rcet.backend.dto.response.MarksResponse;
 import com.rcet.backend.entity.Marks;
 import com.rcet.backend.entity.Student;
+import com.rcet.backend.entity.Teacher;
 import com.rcet.backend.entity.TeacherSubject;
 import com.rcet.backend.exception.DuplicateResourceException;
 import com.rcet.backend.exception.ResourceNotFoundException;
@@ -12,6 +13,8 @@ import com.rcet.backend.repository.StudentRepository;
 import com.rcet.backend.repository.TeacherSubjectRepository;
 import com.rcet.backend.service.MarksService;
 import org.springframework.stereotype.Service;
+import com.rcet.backend.entity.Teacher;
+import com.rcet.backend.security.service.AuthenticatedUserService;
 
 import java.util.List;
 import java.util.stream.Collectors;
@@ -22,15 +25,18 @@ public class MarksServiceImpl implements MarksService {
     private final MarksRepository marksRepository;
     private final StudentRepository studentRepository;
     private final TeacherSubjectRepository teacherSubjectRepository;
+    private final AuthenticatedUserService authenticatedUserService;
 
     public MarksServiceImpl(
             MarksRepository marksRepository,
             StudentRepository studentRepository,
-            TeacherSubjectRepository teacherSubjectRepository) {
+            TeacherSubjectRepository teacherSubjectRepository,
+            AuthenticatedUserService authenticatedUserService) {
 
         this.marksRepository = marksRepository;
         this.studentRepository = studentRepository;
         this.teacherSubjectRepository = teacherSubjectRepository;
+        this.authenticatedUserService = authenticatedUserService;
     }
     @Override
     public MarksResponse createMarks(MarksRequest request) {
@@ -39,10 +45,17 @@ public class MarksServiceImpl implements MarksService {
                 .orElseThrow(() ->
                         new ResourceNotFoundException("Student not found."));
 
-        TeacherSubject teacherSubject = teacherSubjectRepository
-                .findById(request.getTeacherSubjectId())
-                .orElseThrow(() ->
-                        new ResourceNotFoundException("Teacher Subject not found."));
+        Teacher teacher =
+                authenticatedUserService.getCurrentTeacher();
+
+        TeacherSubject teacherSubject =
+                teacherSubjectRepository
+                        .findByIdAndTeacher(
+                                request.getTeacherSubjectId(),
+                                teacher)
+                        .orElseThrow(() ->
+                                new ResourceNotFoundException(
+                                        "Subject not assigned to logged in teacher."));
 
         if (marksRepository.existsByStudentAndTeacherSubjectAndExamType(
                 student,
@@ -53,9 +66,24 @@ public class MarksServiceImpl implements MarksService {
                     "Marks already exist for this exam.");
         }
 
+        if (request.getMaximumMarks() <= 0) {
+            throw new IllegalArgumentException(
+                    "Maximum marks must be greater than zero.");
+        }
+
+        if (request.getObtainedMarks() < 0) {
+            throw new IllegalArgumentException(
+                    "Obtained marks cannot be negative.");
+        }
+
         if (request.getObtainedMarks() > request.getMaximumMarks()) {
             throw new IllegalArgumentException(
                     "Obtained marks cannot be greater than maximum marks.");
+        }
+
+        if (request.getWeightage() <= 0) {
+            throw new IllegalArgumentException(
+                    "Weightage must be greater than zero.");
         }
 
         Marks marks = Marks.builder()
@@ -109,10 +137,17 @@ public class MarksServiceImpl implements MarksService {
                 .orElseThrow(() ->
                         new ResourceNotFoundException("Student not found."));
 
-        TeacherSubject teacherSubject = teacherSubjectRepository
-                .findById(request.getTeacherSubjectId())
-                .orElseThrow(() ->
-                        new ResourceNotFoundException("Teacher Subject not found."));
+        Teacher teacher =
+                authenticatedUserService.getCurrentTeacher();
+
+        TeacherSubject teacherSubject =
+                teacherSubjectRepository
+                        .findByIdAndTeacher(
+                                request.getTeacherSubjectId(),
+                                teacher)
+                        .orElseThrow(() ->
+                                new ResourceNotFoundException(
+                                        "Subject not assigned to logged in teacher."));
 
         marksRepository
                 .findByStudentAndTeacherSubjectAndExamType(

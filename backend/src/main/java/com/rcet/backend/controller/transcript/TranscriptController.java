@@ -6,7 +6,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
 @RestController
-@RequestMapping("/api/transcript")
+@RequestMapping("/api/admin/transcript")
 public class TranscriptController {
 
     private final TranscriptService transcriptService;
@@ -17,11 +17,10 @@ public class TranscriptController {
         this.transcriptService = transcriptService;
     }
 
-    @GetMapping("/student/{studentId}")
-    public ResponseEntity<TranscriptResponse> generateTranscript(
-            @PathVariable Long studentId) {
+    @GetMapping("/student")
+    public ResponseEntity<TranscriptResponse> generateTranscript() {
 
         return ResponseEntity.ok(
-                transcriptService.generateTranscript(studentId));
+                transcriptService.generateTranscript());
     }
 }

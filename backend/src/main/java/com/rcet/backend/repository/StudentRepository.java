@@ -2,9 +2,11 @@ package com.rcet.backend.repository;
 
 import com.rcet.backend.entity.Semester;
 import com.rcet.backend.entity.Student;
+import com.rcet.backend.entity.User;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Repository;
 import org.springframework.data.jpa.repository.JpaSpecificationExecutor;
+import com.rcet.backend.entity.Branch;
 
 import java.util.List;
 import java.util.Optional;
@@ -15,6 +17,17 @@ public interface StudentRepository
         JpaSpecificationExecutor<Student> {
 
     List<Student> findBySemester(
+            Semester semester);
+
+    List<Student> findByBranchAndSemester(
+            Branch branch,
+            Semester semester);
+
+    List<Student> findByActiveTrue();
+
+
+    long countByBranchAndSemester(
+            Branch branch,
             Semester semester);
 
 
@@ -28,6 +41,10 @@ public interface StudentRepository
     Optional<Student> findByRegistrationNumber(String registrationNumber);
 
     Optional<Student> findByRollNumber(String rollNumber);
+
+    Optional<Student> findByIdAndActiveTrue(Long id);
+
+    Optional<Student> findByUser(User user);
 
 
 

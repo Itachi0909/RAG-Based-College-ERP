@@ -49,9 +49,7 @@ public class DepartmentServiceImpl implements DepartmentService {
     @Override
     public DepartmentResponse getDepartmentById(Long id) {
 
-        Department department = departmentRepository.findById(id)
-                .orElseThrow(() ->
-                        new ResourceNotFoundException("Department not found."));
+        Department department = getDepartment(id);
 
         return mapToResponse(department);
     }
@@ -61,10 +59,7 @@ public class DepartmentServiceImpl implements DepartmentService {
             Long id,
             DepartmentRequest request) {
 
-        Department department = departmentRepository.findById(id)
-                .orElseThrow(() ->
-                        new ResourceNotFoundException(
-                                "Department not found."));
+        Department department = getDepartment(id);
 
         departmentRepository.findByName(request.getName())
                 .ifPresent(existing -> {
@@ -88,10 +83,7 @@ public class DepartmentServiceImpl implements DepartmentService {
     @Override
     public void deleteDepartment(Long id) {
 
-        Department department = departmentRepository.findById(id)
-                .orElseThrow(() ->
-                        new ResourceNotFoundException(
-                                "Department not found."));
+        Department department = getDepartment(id);
 
         departmentRepository.delete(department);
     }
@@ -103,5 +95,12 @@ public class DepartmentServiceImpl implements DepartmentService {
                 department.getName(),
                 department.getDescription()
         );
+    }
+    private Department getDepartment(Long id) {
+
+        return departmentRepository.findById(id)
+                .orElseThrow(() ->
+                        new ResourceNotFoundException(
+                                "Department not found."));
     }
 }

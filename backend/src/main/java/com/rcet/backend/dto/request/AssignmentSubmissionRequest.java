@@ -8,9 +8,6 @@ public class AssignmentSubmissionRequest {
     @NotNull(message = "Assignment is required")
     private Long assignmentId;
 
-    @NotNull(message = "Student is required")
-    private Long studentId;
-
     @NotBlank(message = "Submission text is required")
     private String submissionText;
 
@@ -23,14 +20,6 @@ public class AssignmentSubmissionRequest {
 
     public void setAssignmentId(Long assignmentId) {
         this.assignmentId = assignmentId;
-    }
-
-    public Long getStudentId() {
-        return studentId;
-    }
-
-    public void setStudentId(Long studentId) {
-        this.studentId = studentId;
     }
 
     public String getSubmissionText() {

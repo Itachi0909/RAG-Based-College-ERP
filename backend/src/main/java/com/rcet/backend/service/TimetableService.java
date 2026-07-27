@@ -25,4 +25,8 @@ public interface TimetableService {
     List<TimetableResponse> getTimetableByTeacher(Long teacherId);
 
     List<TimetableResponse> getTimetableBySemester(Long semesterId);
+
+    List<TimetableResponse> getCurrentStudentTimetable();
+
+    List<TimetableResponse> getCurrentTeacherTimetable();
 }

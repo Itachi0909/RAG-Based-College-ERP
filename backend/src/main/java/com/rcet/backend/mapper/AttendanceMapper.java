@@ -60,9 +60,7 @@ public class AttendanceMapper {
 
                 session.getRemarks(),
 
-                session.getStatus(),
-
-                session.isActive()
+                session.getStatus()
         );
     }
 

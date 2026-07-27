@@ -46,7 +46,7 @@ public class SubjectServiceImpl implements SubjectService {
     @Override
     public List<SubjectResponse> getAllSubjects() {
 
-        return subjectRepository.findAll()
+        return subjectRepository.findByActiveTrue()
                 .stream()
                 .map(this::mapToResponse)
                 .collect(Collectors.toList());
@@ -89,11 +89,13 @@ public class SubjectServiceImpl implements SubjectService {
 
         Subject subject = getSubject(id);
 
-        subjectRepository.delete(subject);
+        subject.setActive(false);
+
+        subjectRepository.save(subject);
     }
     private Subject getSubject(Long id) {
 
-        return subjectRepository.findById(id)
+        return subjectRepository.findByIdAndActiveTrue(id)
                 .orElseThrow(() ->
                         new ResourceNotFoundException(
                                 "Subject not found."));

@@ -8,6 +8,7 @@ import com.rcet.backend.entity.Student;
 import com.rcet.backend.exception.ResourceNotFoundException;
 import com.rcet.backend.repository.SemesterRepository;
 import com.rcet.backend.repository.StudentRepository;
+import com.rcet.backend.security.service.AuthenticatedUserService;
 import com.rcet.backend.service.ResultService;
 import com.rcet.backend.service.TranscriptService;
 import org.springframework.stereotype.Service;
@@ -22,25 +23,24 @@ public class TranscriptServiceImpl
     private final StudentRepository studentRepository;
     private final SemesterRepository semesterRepository;
     private final ResultService resultService;
+    private final AuthenticatedUserService authenticatedUserService;
 
     public TranscriptServiceImpl(
             StudentRepository studentRepository,
             SemesterRepository semesterRepository,
-            ResultService resultService) {
+            ResultService resultService,
+            AuthenticatedUserService authenticatedUserService) {
 
         this.studentRepository = studentRepository;
         this.semesterRepository = semesterRepository;
         this.resultService = resultService;
+        this.authenticatedUserService = authenticatedUserService;
     }
 
     @Override
-    public TranscriptResponse generateTranscript(
-            Long studentId) {
+    public TranscriptResponse generateTranscript() {
 
-        Student student = studentRepository.findById(studentId)
-                .orElseThrow(() ->
-                        new ResourceNotFoundException(
-                                "Student not found."));
+        Student student = authenticatedUserService.getCurrentStudent();
 
         List<Semester> semesters =
                 semesterRepository
@@ -61,7 +61,7 @@ public class TranscriptServiceImpl
 
                 ResultResponse result =
                         resultService.generateResult(
-                                studentId,
+                                student.getId(),
                                 semester.getId());
 
                 semesterResults.add(

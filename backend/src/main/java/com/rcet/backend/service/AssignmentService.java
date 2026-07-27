@@ -22,9 +22,7 @@ public interface AssignmentService {
     void deleteAssignment(
             Long id);
 
-    List<AssignmentResponse> getAssignmentsByStudent(
-            Long studentId);
+    List<AssignmentResponse> getAssignmentsByStudent();
 
-    List<AssignmentResponse> getAssignmentsByTeacher(
-            Long teacherId);
+    List<AssignmentResponse> getAssignmentsByTeacher();
 }

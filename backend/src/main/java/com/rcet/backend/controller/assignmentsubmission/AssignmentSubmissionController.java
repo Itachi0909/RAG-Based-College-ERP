@@ -12,7 +12,7 @@ import org.springframework.web.bind.annotation.*;
 import java.util.List;
 
 @RestController
-@RequestMapping("/api/assignment-submissions")
+@RequestMapping("/api/students/assignment-submissions")
 public class AssignmentSubmissionController {
 
     private final AssignmentSubmissionService assignmentSubmissionService;
@@ -31,14 +31,13 @@ public class AssignmentSubmissionController {
                 .body(assignmentSubmissionService.submitAssignment(request));
     }
 
-    @GetMapping("/student/{studentId}")
+    @GetMapping("/student")
     public ResponseEntity<List<AssignmentSubmissionResponse>>
-    getStudentSubmissions(
-            @PathVariable Long studentId) {
+    getStudentSubmissions() {
 
         return ResponseEntity.ok(
                 assignmentSubmissionService
-                        .getStudentSubmissions(studentId));
+                        .getStudentSubmissions());
     }
 
     @GetMapping("/assignment/{assignmentId}")

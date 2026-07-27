@@ -11,7 +11,7 @@ import org.springframework.web.bind.annotation.*;
 import java.util.List;
 
 @RestController
-@RequestMapping("/api/semester-subjects")
+@RequestMapping("/api/admin/semester-subjects")
 public class SemesterSubjectController {
 
     private final SemesterSubjectService semesterSubjectService;

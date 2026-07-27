@@ -4,8 +4,9 @@ import com.rcet.backend.dto.response.ResultResponse;
 
 public interface ResultService {
 
-    ResultResponse generateResult(
-            Long studentId,
-            Long semesterId
-    );
+    // Student API
+    ResultResponse generateResult(Long semesterId);
+
+    // Internal use (Transcript/Admin)
+    ResultResponse generateResult(Long studentId, Long semesterId);
 }

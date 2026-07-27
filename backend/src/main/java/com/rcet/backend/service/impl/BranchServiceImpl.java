@@ -30,8 +30,7 @@ public class BranchServiceImpl implements BranchService {
     @Override
     public BranchResponse createBranch(BranchRequest request) {
 
-        Department department = departmentRepository.findById(request.getDepartmentId())
-                .orElseThrow(() -> new ResourceNotFoundException("Department not found."));
+        Department department = getDepartment(request.getDepartmentId());
 
         if (branchRepository.existsByNameAndDepartment(request.getName(), department)) {
             throw new DuplicateResourceException("Branch already exists in this department.");
@@ -59,8 +58,7 @@ public class BranchServiceImpl implements BranchService {
     @Override
     public BranchResponse getBranchById(Long id) {
 
-        Branch branch = branchRepository.findById(id)
-                .orElseThrow(() -> new ResourceNotFoundException("Branch not found."));
+        Branch branch = getBranch(id);
 
         return mapToResponse(branch);
     }
@@ -70,16 +68,9 @@ public class BranchServiceImpl implements BranchService {
             Long id,
             BranchRequest request) {
 
-        Branch branch = branchRepository.findById(id)
-                .orElseThrow(() ->
-                        new ResourceNotFoundException(
-                                "Branch not found."));
+        Branch branch = getBranch(id);
 
-        Department department = departmentRepository.findById(
-                        request.getDepartmentId())
-                .orElseThrow(() ->
-                        new ResourceNotFoundException(
-                                "Department not found."));
+        Department department = getDepartment(request.getDepartmentId());
 
         branchRepository.findByNameAndDepartment(
                         request.getName(),
@@ -105,10 +96,22 @@ public class BranchServiceImpl implements BranchService {
     @Override
     public void deleteBranch(Long id) {
 
-        Branch branch = branchRepository.findById(id)
-                .orElseThrow(() -> new ResourceNotFoundException("Branch not found."));
+        Branch branch = getBranch(id);
 
         branchRepository.delete(branch);
+    }
+    private Branch getBranch(Long id) {
+
+        return branchRepository.findById(id)
+                .orElseThrow(() ->
+                        new ResourceNotFoundException("Branch not found."));
+    }
+
+    private Department getDepartment(Long id) {
+
+        return departmentRepository.findById(id)
+                .orElseThrow(() ->
+                        new ResourceNotFoundException("Department not found."));
     }
 
     private BranchResponse mapToResponse(Branch branch) {

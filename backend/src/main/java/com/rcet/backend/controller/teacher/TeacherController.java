@@ -1,4 +1,4 @@
-package com.rcet.backend.controller.admin;
+package com.rcet.backend.controller.teacher;
 
 import com.rcet.backend.dto.request.TeacherRequest;
 import com.rcet.backend.dto.response.TeacherResponse;
@@ -86,15 +86,5 @@ public class TeacherController {
         return ResponseEntity.ok(
                 "Teacher deleted successfully."
         );
-    }
-    @Autowired
-    private PasswordEncoder passwordEncoder;
-
-    @GetMapping("/test-password")
-    public String testPassword() {
-        String raw = "Teacher@123";
-        String hash = "$2a$10$cWuNeLbTtCBr8tkqU8PX.OOfCxDhKhmMxZCYRpQlkZkZ0SFE3bfom";
-
-        return String.valueOf(passwordEncoder.matches(raw, hash));
     }
 }

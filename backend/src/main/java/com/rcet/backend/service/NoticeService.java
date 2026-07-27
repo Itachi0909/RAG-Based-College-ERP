@@ -22,9 +22,7 @@ public interface NoticeService {
     void deleteNotice(
             Long id);
 
-    List<NoticeResponse> getStudentNotices(
-            Long studentId);
+    List<NoticeResponse> getStudentNotices();
 
-    List<NoticeResponse> getTeacherNotices(
-            Long teacherId);
+    List<NoticeResponse> getTeacherNotices();
 }

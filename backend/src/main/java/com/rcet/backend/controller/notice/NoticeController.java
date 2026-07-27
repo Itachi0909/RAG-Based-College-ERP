@@ -11,7 +11,7 @@ import org.springframework.web.bind.annotation.*;
 import java.util.List;
 
 @RestController
-@RequestMapping("/api/notices")
+@RequestMapping("/api/admin/notices")
 public class NoticeController {
 
     private final NoticeService noticeService;
@@ -64,19 +64,17 @@ public class NoticeController {
                 "Notice deleted successfully.");
     }
 
-    @GetMapping("/student/{studentId}")
-    public ResponseEntity<List<NoticeResponse>> getStudentNotices(
-            @PathVariable Long studentId) {
+    @GetMapping("/student")
+    public ResponseEntity<List<NoticeResponse>> getStudentNotices() {
 
         return ResponseEntity.ok(
-                noticeService.getStudentNotices(studentId));
+                noticeService.getStudentNotices());
     }
 
-    @GetMapping("/teacher/{teacherId}")
-    public ResponseEntity<List<NoticeResponse>> getTeacherNotices(
-            @PathVariable Long teacherId) {
+    @GetMapping("/teacher")
+    public ResponseEntity<List<NoticeResponse>> getTeacherNotices() {
 
         return ResponseEntity.ok(
-                noticeService.getTeacherNotices(teacherId));
+                noticeService.getTeacherNotices());
     }
 }

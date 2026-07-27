@@ -12,7 +12,7 @@ import org.springframework.web.bind.annotation.*;
 import java.util.List;
 
 @RestController
-@RequestMapping("/api/fees")
+@RequestMapping("/api/admin/fees")
 public class FeeController {
 
     private final FeeService feeService;
@@ -62,14 +62,6 @@ public class FeeController {
 
         return ResponseEntity.ok(
                 feeService.payFee(id, request));
-    }
-
-    @GetMapping("/student/{studentId}")
-    public ResponseEntity<List<FeeResponse>> getStudentFees(
-            @PathVariable Long studentId) {
-
-        return ResponseEntity.ok(
-                feeService.getStudentFees(studentId));
     }
 
     @DeleteMapping("/{id}")

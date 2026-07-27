@@ -53,6 +53,11 @@ public class TeacherServiceImpl implements TeacherService {
 
         Branch branch = getBranch(request.getBranchId());
 
+        if (!branch.getDepartment().getId().equals(department.getId())) {
+            throw new IllegalArgumentException(
+                    "Selected branch does not belong to the selected department.");
+        }
+
         User user = User.builder()
                 .email(request.getEmail())
                 .password(passwordEncoder.encode(request.getPassword()))
@@ -83,7 +88,7 @@ public class TeacherServiceImpl implements TeacherService {
     @Override
     public List<TeacherResponse> getAllTeachers() {
 
-        return teacherRepository.findAll()
+        return teacherRepository.findByActiveTrue()
                 .stream()
                 .map(TeacherMapper::toResponse)
                 .collect(Collectors.toList());
@@ -121,6 +126,11 @@ public class TeacherServiceImpl implements TeacherService {
 
         Branch branch = getBranch(request.getBranchId());
 
+        if (!branch.getDepartment().getId().equals(department.getId())) {
+            throw new IllegalArgumentException(
+                    "Selected branch does not belong to the selected department.");
+        }
+
         TeacherMapper.updateEntity(teacher, request);
 
         teacher.setDepartment(department);
@@ -152,9 +162,12 @@ public class TeacherServiceImpl implements TeacherService {
 
         User user = teacher.getUser();
 
-        teacherRepository.delete(teacher);
+        teacher.setActive(false);
 
-        userRepository.delete(user);
+        user.setEnabled(false);
+
+        teacherRepository.save(teacher);
+        userRepository.save(user);
     }
 
     // ===================================================
@@ -163,7 +176,7 @@ public class TeacherServiceImpl implements TeacherService {
 
     private Teacher getTeacher(Long id) {
 
-        return teacherRepository.findById(id)
+        return teacherRepository.findByIdAndActiveTrue(id)
                 .orElseThrow(() ->
                         new ResourceNotFoundException(
                                 "Teacher not found."));

@@ -3,6 +3,8 @@ package com.rcet.backend.service.impl;
 import com.rcet.backend.dto.request.NoticeRequest;
 import com.rcet.backend.dto.response.NoticeResponse;
 import com.rcet.backend.entity.*;
+import com.rcet.backend.enums.Role;
+import com.rcet.backend.exception.ForbiddenOperationException;
 import com.rcet.backend.exception.ResourceNotFoundException;
 import com.rcet.backend.repository.*;
 import com.rcet.backend.service.NoticeService;
@@ -10,6 +12,7 @@ import org.springframework.stereotype.Service;
 
 import java.util.List;
 import java.util.stream.Collectors;
+import com.rcet.backend.security.service.AuthenticatedUserService;
 
 @Service
 public class NoticeServiceImpl implements NoticeService {
@@ -17,26 +20,30 @@ public class NoticeServiceImpl implements NoticeService {
     private final NoticeRepository noticeRepository;
     private final BranchRepository branchRepository;
     private final SemesterRepository semesterRepository;
-    private final StudentRepository studentRepository;
-    private final TeacherRepository teacherRepository;
+    private final AuthenticatedUserService authenticatedUserService;
 
     public NoticeServiceImpl(
             NoticeRepository noticeRepository,
             BranchRepository branchRepository,
             SemesterRepository semesterRepository,
-            StudentRepository studentRepository,
-            TeacherRepository teacherRepository) {
+            AuthenticatedUserService authenticatedUserService) {
 
         this.noticeRepository = noticeRepository;
         this.branchRepository = branchRepository;
         this.semesterRepository = semesterRepository;
-        this.studentRepository = studentRepository;
-        this.teacherRepository = teacherRepository;
+        this.authenticatedUserService = authenticatedUserService;
     }
 
     @Override
     public NoticeResponse createNotice(
             NoticeRequest request) {
+
+        User user = authenticatedUserService.getCurrentUser();
+
+        if (user.getRole() != Role.ADMIN) {
+            throw new ForbiddenOperationException(
+                    "Only admin can create Notice.");
+        }
 
         Branch branch = null;
         Semester semester = null;
@@ -113,6 +120,13 @@ public class NoticeServiceImpl implements NoticeService {
             Long id,
             NoticeRequest request) {
 
+        User user = authenticatedUserService.getCurrentUser();
+
+        if (user.getRole() != Role.ADMIN) {
+            throw new ForbiddenOperationException(
+                    "Only admin can update Notice");
+        }
+
         Notice notice = noticeRepository.findById(id)
                 .orElseThrow(() ->
                         new ResourceNotFoundException(
@@ -161,6 +175,13 @@ public class NoticeServiceImpl implements NoticeService {
     @Override
     public void deleteNotice(Long id) {
 
+        User user = authenticatedUserService.getCurrentUser();
+
+        if (user.getRole() != Role.ADMIN) {
+            throw new ForbiddenOperationException(
+                    "Only admin can delete Notice");
+        }
+
         Notice notice = noticeRepository.findById(id)
                 .orElseThrow(() ->
                         new ResourceNotFoundException(
@@ -172,13 +193,10 @@ public class NoticeServiceImpl implements NoticeService {
     }
 
     @Override
-    public List<NoticeResponse> getStudentNotices(
-            Long studentId) {
+    public List<NoticeResponse> getStudentNotices() {
 
-        Student student = studentRepository.findById(studentId)
-                .orElseThrow(() ->
-                        new ResourceNotFoundException(
-                                "Student not found."));
+        Student student =
+                authenticatedUserService.getCurrentStudent();
 
         return noticeRepository.findStudentNotices(
                         student.getSemester().getBranch().getId(),
@@ -191,13 +209,10 @@ public class NoticeServiceImpl implements NoticeService {
     }
 
     @Override
-    public List<NoticeResponse> getTeacherNotices(
-            Long teacherId) {
+    public List<NoticeResponse> getTeacherNotices() {
 
-        Teacher teacher = teacherRepository.findById(teacherId)
-                .orElseThrow(() ->
-                        new ResourceNotFoundException(
-                                "Teacher not found."));
+        Teacher teacher =
+                authenticatedUserService.getCurrentTeacher();
 
         return noticeRepository.findTeacherNotices(
                         teacher.getBranch().getId(),

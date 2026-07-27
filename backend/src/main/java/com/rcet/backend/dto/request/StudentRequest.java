@@ -6,6 +6,7 @@ import com.rcet.backend.entity.GuardianRelation;
 import com.rcet.backend.entity.StudentStatus;
 import jakarta.validation.constraints.*;
 import lombok.*;
+import jakarta.validation.constraints.Past;
 
 import java.time.LocalDate;
 
@@ -44,6 +45,7 @@ public class StudentRequest {
     private Gender gender;
 
     @NotNull(message = "Date of birth is required")
+    @Past(message = "Date of birth must be in the past.")
     private LocalDate dateOfBirth;
 
     @NotNull(message = "Blood group is required")
@@ -56,6 +58,10 @@ public class StudentRequest {
     // =====================================
 
     @NotBlank(message = "Phone number is required")
+    @Pattern(
+            regexp = "^[6-9]\\d{9}$",
+            message = "Phone number must be a valid 10-digit Indian mobile number."
+    )
     private String phone;
 
     // =====================================

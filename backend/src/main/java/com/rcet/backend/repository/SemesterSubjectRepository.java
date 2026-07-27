@@ -21,6 +21,10 @@ public interface SemesterSubjectRepository
             Semester semester,
             Subject subject);
 
+    Optional<SemesterSubject> findByIdAndActiveTrue(Long id);
+
+    List<SemesterSubject> findByActiveTrue();
+
     List<SemesterSubject> findBySemester(
             Semester semester);
 

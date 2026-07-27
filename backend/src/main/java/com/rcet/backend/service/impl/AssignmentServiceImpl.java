@@ -8,12 +8,12 @@ import com.rcet.backend.entity.Teacher;
 import com.rcet.backend.entity.TeacherSubject;
 import com.rcet.backend.exception.ResourceNotFoundException;
 import com.rcet.backend.repository.AssignmentRepository;
-import com.rcet.backend.repository.StudentRepository;
-import com.rcet.backend.repository.TeacherRepository;
 import com.rcet.backend.repository.TeacherSubjectRepository;
 import com.rcet.backend.service.AssignmentService;
 import org.springframework.stereotype.Service;
+import com.rcet.backend.security.service.AuthenticatedUserService;
 
+import java.time.LocalDate;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -22,31 +22,59 @@ public class AssignmentServiceImpl implements AssignmentService {
 
     private final AssignmentRepository assignmentRepository;
     private final TeacherSubjectRepository teacherSubjectRepository;
-    private final TeacherRepository teacherRepository;
-    private final StudentRepository studentRepository;
+    private final AuthenticatedUserService authenticatedUserService;
 
     public AssignmentServiceImpl(
             AssignmentRepository assignmentRepository,
             TeacherSubjectRepository teacherSubjectRepository,
-            TeacherRepository teacherRepository,
-            StudentRepository studentRepository) {
+            AuthenticatedUserService authenticatedUserService) {
 
         this.assignmentRepository = assignmentRepository;
         this.teacherSubjectRepository = teacherSubjectRepository;
-        this.teacherRepository = teacherRepository;
-        this.studentRepository = studentRepository;
+        this.authenticatedUserService = authenticatedUserService;
     }
 
     @Override
     public AssignmentResponse createAssignment(
             AssignmentRequest request) {
 
+        Teacher teacher =
+                authenticatedUserService.getCurrentTeacher();
+
         TeacherSubject teacherSubject =
-                teacherSubjectRepository.findById(
-                                request.getTeacherSubjectId())
+                teacherSubjectRepository
+                        .findByIdAndTeacher(
+                                request.getTeacherSubjectId(),
+                                teacher)
                         .orElseThrow(() ->
                                 new ResourceNotFoundException(
-                                        "Teacher Subject not found."));
+                                        "Subject not assigned to logged in teacher."));
+
+        if (request.getTitle() == null ||
+                request.getTitle().trim().isEmpty()) {
+
+            throw new IllegalArgumentException(
+                    "Assignment title is required.");
+        }
+
+        if (request.getDescription() == null ||
+                request.getDescription().trim().isEmpty()) {
+
+            throw new IllegalArgumentException(
+                    "Assignment description is required.");
+        }
+
+        if (request.getMaximumMarks() <= 0) {
+
+            throw new IllegalArgumentException(
+                    "Maximum marks must be greater than zero.");
+        }
+
+        if (request.getDueDate().isBefore(LocalDate.now())) {
+
+            throw new IllegalArgumentException(
+                    "Due date cannot be in the past.");
+        }
 
         Assignment assignment = Assignment.builder()
 
@@ -64,8 +92,7 @@ public class AssignmentServiceImpl implements AssignmentService {
 
                 .build();
 
-        Assignment saved =
-                assignmentRepository.save(assignment);
+        Assignment saved = assignmentRepository.save(assignment);
 
         return mapToResponse(saved);
     }
@@ -97,19 +124,46 @@ public class AssignmentServiceImpl implements AssignmentService {
             Long id,
             AssignmentRequest request) {
 
-        Assignment assignment = assignmentRepository.findByIdAndActiveTrue(id)
-                .orElseThrow(() ->
-                        new ResourceNotFoundException(
-                                "Assignment not found."));
-
-        TeacherSubject teacherSubject =
-                teacherSubjectRepository.findById(
-                                request.getTeacherSubjectId())
+        Assignment assignment =
+                assignmentRepository.findByIdAndActiveTrue(id)
                         .orElseThrow(() ->
                                 new ResourceNotFoundException(
-                                        "Teacher Subject not found."));
+                                        "Assignment not found."));
 
-        if (request.getDueDate().isBefore(java.time.LocalDate.now())) {
+        Teacher teacher =
+                authenticatedUserService.getCurrentTeacher();
+
+        TeacherSubject teacherSubject =
+                teacherSubjectRepository
+                        .findByIdAndTeacher(
+                                request.getTeacherSubjectId(),
+                                teacher)
+                        .orElseThrow(() ->
+                                new ResourceNotFoundException(
+                                        "Subject not assigned to logged in teacher."));
+
+        if (request.getTitle() == null ||
+                request.getTitle().trim().isEmpty()) {
+
+            throw new IllegalArgumentException(
+                    "Assignment title is required.");
+        }
+
+        if (request.getDescription() == null ||
+                request.getDescription().trim().isEmpty()) {
+
+            throw new IllegalArgumentException(
+                    "Assignment description is required.");
+        }
+
+        if (request.getMaximumMarks() <= 0) {
+
+            throw new IllegalArgumentException(
+                    "Maximum marks must be greater than zero.");
+        }
+
+        if (request.getDueDate().isBefore(LocalDate.now())) {
+
             throw new IllegalArgumentException(
                     "Due date cannot be in the past.");
         }
@@ -121,8 +175,7 @@ public class AssignmentServiceImpl implements AssignmentService {
         assignment.setDueDate(request.getDueDate());
         assignment.setMaximumMarks(request.getMaximumMarks());
 
-        Assignment updated =
-                assignmentRepository.save(assignment);
+        Assignment updated = assignmentRepository.save(assignment);
 
         return mapToResponse(updated);
     }
@@ -143,14 +196,9 @@ public class AssignmentServiceImpl implements AssignmentService {
     }
 
     @Override
-    public List<AssignmentResponse> getAssignmentsByStudent(
-            Long studentId) {
+    public List<AssignmentResponse> getAssignmentsByStudent() {
 
-        Student student =
-                studentRepository.findById(studentId)
-                        .orElseThrow(() ->
-                                new ResourceNotFoundException(
-                                        "Student not found."));
+        Student student = authenticatedUserService.getCurrentStudent();
 
         return assignmentRepository
                 .findByTeacherSubject_SemesterSubject_Semester_IdAndActiveTrue(
@@ -161,14 +209,9 @@ public class AssignmentServiceImpl implements AssignmentService {
     }
 
     @Override
-    public List<AssignmentResponse> getAssignmentsByTeacher(
-            Long teacherId) {
+    public List<AssignmentResponse> getAssignmentsByTeacher() {
 
-        Teacher teacher =
-                teacherRepository.findById(teacherId)
-                        .orElseThrow(() ->
-                                new ResourceNotFoundException(
-                                        "Teacher not found."));
+        Teacher teacher = authenticatedUserService.getCurrentTeacher();
 
         return assignmentRepository
                 .findByTeacherSubject_TeacherAndActiveTrue(teacher)

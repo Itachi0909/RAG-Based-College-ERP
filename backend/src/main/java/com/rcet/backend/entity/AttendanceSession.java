@@ -7,7 +7,18 @@ import java.time.LocalDate;
 import java.time.LocalTime;
 
 @Entity
-@Table(name = "attendance_sessions")
+@Table(
+        name = "attendance_sessions",
+        uniqueConstraints = {
+                @UniqueConstraint(
+                        columnNames = {
+                                "teacher_subject_id",
+                                "attendance_date",
+                                "start_time"
+                        }
+                )
+        }
+)
 public class AttendanceSession extends BaseEntity {
 
     @ManyToOne(fetch = FetchType.LAZY)
@@ -32,9 +43,6 @@ public class AttendanceSession extends BaseEntity {
     @Enumerated(EnumType.STRING)
     @Column(nullable = false)
     private AttendanceSessionStatus status;
-
-    @Column(nullable = false)
-    private boolean active = true;
 
     public AttendanceSession() {
     }
@@ -95,11 +103,4 @@ public class AttendanceSession extends BaseEntity {
         this.status = status;
     }
 
-    public boolean isActive() {
-        return active;
-    }
-
-    public void setActive(boolean active) {
-        this.active = active;
-    }
 }

@@ -5,10 +5,7 @@ import com.rcet.backend.dto.request.AttendanceItemRequest;
 import com.rcet.backend.dto.response.AttendanceBulkResponse;
 import com.rcet.backend.dto.response.AttendanceResponse;
 import com.rcet.backend.dto.response.StudentAttendanceViewResponse;
-import com.rcet.backend.entity.Attendance;
-import com.rcet.backend.entity.AttendanceSession;
-import com.rcet.backend.entity.Semester;
-import com.rcet.backend.entity.Student;
+import com.rcet.backend.entity.*;
 import com.rcet.backend.enums.AttendanceSessionStatus;
 import com.rcet.backend.exception.ResourceNotFoundException;
 import com.rcet.backend.mapper.AttendanceMapper;
@@ -59,8 +56,12 @@ public class AttendanceServiceImpl implements AttendanceService {
 
         int present = 0;
         int absent = 0;
-        int late = 0;
         int leave = 0;
+
+        Semester semester =
+                session.getTeacherSubject()
+                        .getSemesterSubject()
+                        .getSemester();
 
         for (AttendanceItemRequest item : request.getAttendanceList()) {
 
@@ -69,6 +70,14 @@ public class AttendanceServiceImpl implements AttendanceService {
                             .orElseThrow(() ->
                                     new ResourceNotFoundException(
                                             "Student not found"));
+
+
+            if (!student.getSemester().getId().equals(semester.getId()) ||
+                    !student.getBranch().getId().equals(semester.getBranch().getId())) {
+
+                throw new RuntimeException(
+                        "Student does not belong to this class.");
+            }
 
             if (attendanceRepository.existsByAttendanceSessionAndStudent(
                     session,
@@ -97,14 +106,15 @@ public class AttendanceServiceImpl implements AttendanceService {
 
                 case ABSENT -> absent++;
 
-                case LATE -> late++;
-
                 case LEAVE -> leave++;
             }
         }
 
         AttendanceBulkResponse response =
                 new AttendanceBulkResponse();
+
+        session.setStatus(AttendanceSessionStatus.COMPLETED);
+        attendanceSessionRepository.save(session);
 
         response.setAttendanceSessionId(session.getId());
         response.setAttendance(responseList);
@@ -114,8 +124,6 @@ public class AttendanceServiceImpl implements AttendanceService {
         response.setPresentCount(present);
 
         response.setAbsentCount(absent);
-
-        response.setLateCount(late);
 
         response.setLeaveCount(leave);
 
@@ -132,12 +140,16 @@ public class AttendanceServiceImpl implements AttendanceService {
                                 new ResourceNotFoundException(
                                         "Attendance Session not found"));
 
+        Semester semester =
+                session.getTeacherSubject()
+                        .getSemesterSubject()
+                        .getSemester();
+
         List<AttendanceResponse> responseList =
                 new ArrayList<>();
 
         int present = 0;
         int absent = 0;
-        int late = 0;
         int leave = 0;
 
         for (AttendanceItemRequest item : request.getAttendanceList()) {
@@ -147,6 +159,14 @@ public class AttendanceServiceImpl implements AttendanceService {
                             .orElseThrow(() ->
                                     new ResourceNotFoundException(
                                             "Student not found"));
+
+
+            if (!student.getSemester().getId().equals(semester.getId()) ||
+                    !student.getBranch().getId().equals(semester.getBranch().getId())) {
+
+                throw new RuntimeException(
+                        "Student does not belong to this class.");
+            }
 
             Attendance attendance =
                     attendanceRepository
@@ -174,8 +194,6 @@ public class AttendanceServiceImpl implements AttendanceService {
 
                 case ABSENT -> absent++;
 
-                case LATE -> late++;
-
                 case LEAVE -> leave++;
             }
         }
@@ -192,8 +210,6 @@ public class AttendanceServiceImpl implements AttendanceService {
         response.setPresentCount(present);
 
         response.setAbsentCount(absent);
-
-        response.setLateCount(late);
 
         response.setLeaveCount(leave);
 
@@ -266,8 +282,10 @@ public class AttendanceServiceImpl implements AttendanceService {
                         .getSemester();
 
         List<Student> students =
-                studentRepository.findBySemester(semester);
-
+                studentRepository.findByBranchAndSemester(
+                        semester.getBranch(),
+                        semester
+                );
         return students.stream()
                 .map(AttendanceMapper::toStudentAttendanceViewResponse)
                 .toList();

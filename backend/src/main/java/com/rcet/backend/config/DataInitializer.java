@@ -13,12 +13,13 @@ public class DataInitializer implements CommandLineRunner {
     private final UserRepository userRepository;
     private final PasswordEncoder passwordEncoder;
 
-    public DataInitializer(UserRepository userRepository,
-                           PasswordEncoder passwordEncoder) {
+    public DataInitializer(
+            UserRepository userRepository,
+            PasswordEncoder passwordEncoder) {
+
         this.userRepository = userRepository;
         this.passwordEncoder = passwordEncoder;
     }
-
 
     @Override
     public void run(String... args) {
@@ -35,8 +36,7 @@ public class DataInitializer implements CommandLineRunner {
 
             userRepository.save(admin);
 
-
+            System.out.println("Default Admin Created Successfully.");
         }
-
     }
 }

@@ -11,7 +11,7 @@ import org.springframework.web.bind.annotation.*;
 import java.util.List;
 
 @RestController
-@RequestMapping("/api/timetable")
+@RequestMapping("/api/admin/timetable")
 public class TimetableController {
 
     private final TimetableService timetableService;
@@ -64,22 +64,20 @@ public class TimetableController {
                 "Timetable deleted successfully.");
     }
 
-    @GetMapping("/student/{studentId}")
+    @GetMapping("/student")
     public ResponseEntity<List<TimetableResponse>>
-    getStudentTimetable(
-            @PathVariable Long studentId) {
+    getStudentTimetable() {
 
         return ResponseEntity.ok(
-                timetableService.getTimetableByStudent(studentId));
+                timetableService.getCurrentStudentTimetable());
     }
 
-    @GetMapping("/teacher/{teacherId}")
+    @GetMapping("/teacher")
     public ResponseEntity<List<TimetableResponse>>
-    getTeacherTimetable(
-            @PathVariable Long teacherId) {
+    getTeacherTimetable() {
 
         return ResponseEntity.ok(
-                timetableService.getTimetableByTeacher(teacherId));
+                timetableService.getCurrentTeacherTimetable());
     }
 
     @GetMapping("/semester/{semesterId}")

@@ -15,13 +15,12 @@ public class ResultController {
         this.resultService = resultService;
     }
 
-    @GetMapping("/student/{studentId}/semester/{semesterId}")
+    @GetMapping("/student/semester/{semesterId}")
     public ResponseEntity<ResultResponse> generateResult(
-            @PathVariable Long studentId,
             @PathVariable Long semesterId) {
 
         return ResponseEntity.ok(
-                resultService.generateResult(studentId, semesterId)
+                resultService.generateResult(semesterId)
         );
     }
 }

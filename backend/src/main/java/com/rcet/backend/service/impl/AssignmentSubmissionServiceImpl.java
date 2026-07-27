@@ -3,18 +3,16 @@ package com.rcet.backend.service.impl;
 import com.rcet.backend.dto.request.AssignmentEvaluationRequest;
 import com.rcet.backend.dto.request.AssignmentSubmissionRequest;
 import com.rcet.backend.dto.response.AssignmentSubmissionResponse;
-import com.rcet.backend.entity.Assignment;
-import com.rcet.backend.entity.AssignmentSubmission;
-import com.rcet.backend.entity.Student;
-import com.rcet.backend.entity.SubmissionStatus;
+import com.rcet.backend.entity.*;
 import com.rcet.backend.exception.DuplicateResourceException;
 import com.rcet.backend.exception.ResourceNotFoundException;
 import com.rcet.backend.repository.AssignmentRepository;
 import com.rcet.backend.repository.AssignmentSubmissionRepository;
-import com.rcet.backend.repository.StudentRepository;
 import com.rcet.backend.service.AssignmentSubmissionService;
 import org.springframework.stereotype.Service;
+import com.rcet.backend.security.service.AuthenticatedUserService;
 
+import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.stream.Collectors;
@@ -25,16 +23,16 @@ public class AssignmentSubmissionServiceImpl
 
     private final AssignmentSubmissionRepository submissionRepository;
     private final AssignmentRepository assignmentRepository;
-    private final StudentRepository studentRepository;
+    private final AuthenticatedUserService authenticatedUserService;
 
     public AssignmentSubmissionServiceImpl(
             AssignmentSubmissionRepository submissionRepository,
             AssignmentRepository assignmentRepository,
-            StudentRepository studentRepository) {
+            AuthenticatedUserService authenticatedUserService) {
 
         this.submissionRepository = submissionRepository;
         this.assignmentRepository = assignmentRepository;
-        this.studentRepository = studentRepository;
+        this.authenticatedUserService = authenticatedUserService;
     }
 
     @Override
@@ -47,11 +45,13 @@ public class AssignmentSubmissionServiceImpl
                         new ResourceNotFoundException(
                                 "Assignment not found."));
 
-        Student student = studentRepository.findById(
-                        request.getStudentId())
-                .orElseThrow(() ->
-                        new ResourceNotFoundException(
-                                "Student not found."));
+        if (LocalDate.now().isAfter(assignment.getDueDate())) {
+            throw new IllegalArgumentException(
+                    "Assignment submission deadline has passed.");
+        }
+
+        Student student =
+                authenticatedUserService.getCurrentStudent();
 
         if (submissionRepository.existsByAssignmentAndStudent(
                 assignment,
@@ -85,12 +85,9 @@ public class AssignmentSubmissionServiceImpl
 
     @Override
     public List<AssignmentSubmissionResponse>
-    getStudentSubmissions(Long studentId) {
+    getStudentSubmissions() {
 
-        Student student = studentRepository.findById(studentId)
-                .orElseThrow(() ->
-                        new ResourceNotFoundException(
-                                "Student not found."));
+        Student student = authenticatedUserService.getCurrentStudent();
 
         return submissionRepository
                 .findByStudentAndActiveTrue(student)
@@ -108,6 +105,17 @@ public class AssignmentSubmissionServiceImpl
                 .orElseThrow(() ->
                         new ResourceNotFoundException(
                                 "Assignment not found."));
+
+        Teacher teacher = authenticatedUserService.getCurrentTeacher();
+
+        if (!assignment.getTeacherSubject()
+                .getTeacher()
+                .getId()
+                .equals(teacher.getId())) {
+
+            throw new ResourceNotFoundException(
+                    "Assignment not found.");
+        }
 
         return submissionRepository
                 .findByAssignmentAndActiveTrue(assignment)
@@ -127,6 +135,25 @@ public class AssignmentSubmissionServiceImpl
                         .orElseThrow(() ->
                                 new ResourceNotFoundException(
                                         "Submission not found."));
+
+
+        Teacher teacher = authenticatedUserService.getCurrentTeacher();
+
+        if (!submission.getAssignment()
+                .getTeacherSubject()
+                .getTeacher()
+                .getId()
+                .equals(teacher.getId())) {
+
+            throw new ResourceNotFoundException(
+                    "Assignment submission not found.");
+        }
+        
+        if (submission.getStatus() == SubmissionStatus.EVALUATED) {
+            throw new IllegalArgumentException(
+                    "Assignment has already been evaluated.");
+        }
+
 
         if (request.getObtainedMarks() >
                 submission.getAssignment().getMaximumMarks()) {
