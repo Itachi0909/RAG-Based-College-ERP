@@ -5,29 +5,42 @@ import com.rcet.backend.entity.SemesterSubject;
 import com.rcet.backend.entity.Subject;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Repository;
-import java.util.Optional;
 
 import java.util.List;
+import java.util.Optional;
 
 @Repository
 public interface SemesterSubjectRepository
         extends JpaRepository<SemesterSubject, Long> {
 
-    boolean existsBySemesterAndSubject(
-            Semester semester,
-            Subject subject);
+    List<SemesterSubject> findByActiveTrue();
 
-    Optional<SemesterSubject> findBySemesterAndSubject(
-            Semester semester,
-            Subject subject);
+    List<SemesterSubject> findBySemester(Semester semester);
+
+    List<SemesterSubject> findBySemesterAndActiveTrue(
+            Semester semester
+    );
+
+    List<SemesterSubject> findBySemesterId(Long semesterId);
+
+    List<SemesterSubject> findBySemesterIdAndActiveTrue(
+            Long semesterId
+    );
 
     Optional<SemesterSubject> findByIdAndActiveTrue(Long id);
 
-    List<SemesterSubject> findByActiveTrue();
+    Optional<SemesterSubject> findBySemesterAndSubject(
+            Semester semester,
+            Subject subject
+    );
 
-    List<SemesterSubject> findBySemester(
-            Semester semester);
+    boolean existsBySemesterAndSubject(
+            Semester semester,
+            Subject subject
+    );
 
-    List<SemesterSubject> findBySubject(
-            Subject subject);
+    boolean existsBySemesterAndSubjectAndActiveTrue(
+            Semester semester,
+            Subject subject
+    );
 }

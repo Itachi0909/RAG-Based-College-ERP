@@ -47,6 +47,10 @@ public class TeacherServiceImpl implements TeacherService {
     @Override
     public TeacherResponse createTeacher(TeacherRequest request) {
 
+        if (request.getPassword() == null || request.getPassword().isBlank()) {
+            throw new IllegalArgumentException("Password is required");
+        }
+
         validateDuplicates(request);
 
         Department department = getDepartment(request.getDepartmentId());

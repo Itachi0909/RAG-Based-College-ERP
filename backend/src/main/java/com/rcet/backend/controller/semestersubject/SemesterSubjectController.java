@@ -63,4 +63,15 @@ public class SemesterSubjectController {
 
         return ResponseEntity.ok("Semester Subject mapping deleted successfully.");
     }
+
+    @GetMapping("/semester/{semesterId}")
+    public ResponseEntity<List<SemesterSubjectResponse>>
+    getSemesterSubjectsBySemester(
+            @PathVariable Long semesterId
+    ) {
+        return ResponseEntity.ok(
+                semesterSubjectService
+                        .getSemesterSubjectsBySemester(semesterId)
+        );
+    }
 }

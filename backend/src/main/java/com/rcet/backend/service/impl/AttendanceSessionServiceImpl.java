@@ -57,8 +57,7 @@ public class AttendanceSessionServiceImpl
                     "You are not allowed to create attendance for this subject.");
         }
 
-        AttendanceSession session =
-                new AttendanceSession();
+        AttendanceSession session = new AttendanceSession();
 
         session.setTeacherSubject(teacherSubject);
         session.setAttendanceDate(request.getAttendanceDate());
@@ -66,13 +65,14 @@ public class AttendanceSessionServiceImpl
         session.setEndTime(request.getEndTime());
         session.setTopic(request.getTopic());
         session.setRemarks(request.getRemarks());
-        session.setStatus(
-                AttendanceSessionStatus.SCHEDULED);
+        session.setStatus(AttendanceSessionStatus.SCHEDULED);
+
+        // Required because the database active column does not have a default value
+        session.setActive(true);
 
         attendanceSessionRepository.save(session);
 
-        return AttendanceMapper
-                .toAttendanceSessionResponse(session);
+        return AttendanceMapper.toAttendanceSessionResponse(session);
     }
 
     @Override
@@ -86,8 +86,7 @@ public class AttendanceSessionServiceImpl
                                 new ResourceNotFoundException(
                                         "Attendance Session not found"));
 
-        return AttendanceMapper
-                .toAttendanceSessionResponse(session);
+        return AttendanceMapper.toAttendanceSessionResponse(session);
     }
 
     @Override
@@ -129,10 +128,13 @@ public class AttendanceSessionServiceImpl
         session.setTopic(request.getTopic());
         session.setRemarks(request.getRemarks());
 
+        if (session.getActive() == null) {
+            session.setActive(true);
+        }
+
         attendanceSessionRepository.save(session);
 
-        return AttendanceMapper
-                .toAttendanceSessionResponse(session);
+        return AttendanceMapper.toAttendanceSessionResponse(session);
     }
 
     @Override

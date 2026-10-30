@@ -1,6 +1,12 @@
 package com.rcet.backend.entity;
 
-import jakarta.persistence.*;
+import jakarta.persistence.Column;
+import jakarta.persistence.Entity;
+import jakarta.persistence.FetchType;
+import jakarta.persistence.JoinColumn;
+import jakarta.persistence.ManyToOne;
+import jakarta.persistence.Table;
+import jakarta.persistence.UniqueConstraint;
 
 @Entity
 @Table(
@@ -30,6 +36,12 @@ public class TeacherSubject extends BaseEntity {
     )
     private SemesterSubject semesterSubject;
 
+    @Column(
+            name = "active",
+            nullable = false
+    )
+    private Boolean active = true;
+
     public TeacherSubject() {
     }
 
@@ -39,14 +51,14 @@ public class TeacherSubject extends BaseEntity {
 
         this.teacher = teacher;
         this.semesterSubject = semesterSubject;
+        this.active = true;
     }
 
     public Teacher getTeacher() {
         return teacher;
     }
 
-    public void setTeacher(
-            Teacher teacher) {
+    public void setTeacher(Teacher teacher) {
         this.teacher = teacher;
     }
 
@@ -56,6 +68,15 @@ public class TeacherSubject extends BaseEntity {
 
     public void setSemesterSubject(
             SemesterSubject semesterSubject) {
+
         this.semesterSubject = semesterSubject;
+    }
+
+    public Boolean getActive() {
+        return active;
+    }
+
+    public void setActive(Boolean active) {
+        this.active = active;
     }
 }

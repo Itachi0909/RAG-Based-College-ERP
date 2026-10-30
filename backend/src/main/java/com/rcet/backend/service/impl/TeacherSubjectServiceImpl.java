@@ -11,6 +11,7 @@ import com.rcet.backend.mapper.TeacherSubjectMapper;
 import com.rcet.backend.repository.SemesterSubjectRepository;
 import com.rcet.backend.repository.TeacherRepository;
 import com.rcet.backend.repository.TeacherSubjectRepository;
+import com.rcet.backend.security.service.AuthenticatedUserService;
 import com.rcet.backend.service.TeacherSubjectService;
 import org.springframework.stereotype.Service;
 
@@ -24,15 +25,18 @@ public class TeacherSubjectServiceImpl
     private final TeacherSubjectRepository teacherSubjectRepository;
     private final TeacherRepository teacherRepository;
     private final SemesterSubjectRepository semesterSubjectRepository;
+    private final AuthenticatedUserService authenticatedUserService;
 
     public TeacherSubjectServiceImpl(
             TeacherSubjectRepository teacherSubjectRepository,
             TeacherRepository teacherRepository,
-            SemesterSubjectRepository semesterSubjectRepository) {
+            SemesterSubjectRepository semesterSubjectRepository,
+            AuthenticatedUserService authenticatedUserService) {
 
         this.teacherSubjectRepository = teacherSubjectRepository;
         this.teacherRepository = teacherRepository;
         this.semesterSubjectRepository = semesterSubjectRepository;
+        this.authenticatedUserService = authenticatedUserService;
     }
 
     // ==========================================
@@ -52,7 +56,8 @@ public class TeacherSubjectServiceImpl
                 semesterSubject.getSemester().getBranch().getId())) {
 
             throw new IllegalArgumentException(
-                    "Teacher and Semester Subject must belong to the same branch.");
+                    "Teacher and Semester Subject must belong to the same branch."
+            );
         }
 
         if (teacherSubjectRepository.existsByTeacherAndSemesterSubject(
@@ -60,14 +65,15 @@ public class TeacherSubjectServiceImpl
                 semesterSubject)) {
 
             throw new DuplicateResourceException(
-                    "Teacher is already assigned to this subject.");
+                    "Teacher is already assigned to this subject."
+            );
         }
 
-        TeacherSubject teacherSubject =
-                new TeacherSubject();
+        TeacherSubject teacherSubject = new TeacherSubject();
 
         teacherSubject.setTeacher(teacher);
         teacherSubject.setSemesterSubject(semesterSubject);
+        teacherSubject.setActive(true);
 
         TeacherSubject saved =
                 teacherSubjectRepository.save(teacherSubject);
@@ -80,11 +86,11 @@ public class TeacherSubjectServiceImpl
     // ==========================================
 
     @Override
-    public TeacherSubjectResponse getTeacherSubjectById(
-            Long id) {
+    public TeacherSubjectResponse getTeacherSubjectById(Long id) {
 
         return TeacherSubjectMapper.toResponse(
-                getTeacherSubject(id));
+                getTeacherSubject(id)
+        );
     }
 
     // ==========================================
@@ -92,10 +98,9 @@ public class TeacherSubjectServiceImpl
     // ==========================================
 
     @Override
-    public List<TeacherSubjectResponse>
-    getAllTeacherSubjects() {
+    public List<TeacherSubjectResponse> getAllTeacherSubjects() {
 
-        return teacherSubjectRepository.findAll()
+        return teacherSubjectRepository.findByActiveTrue()
                 .stream()
                 .map(TeacherSubjectMapper::toResponse)
                 .collect(Collectors.toList());
@@ -123,12 +128,18 @@ public class TeacherSubjectServiceImpl
                 semesterSubject.getSemester().getBranch().getId())) {
 
             throw new IllegalArgumentException(
-                    "Teacher and Semester Subject must belong to the same branch.");
+                    "Teacher and Semester Subject must belong to the same branch."
+            );
         }
 
-        if ((!teacherSubject.getTeacher().equals(teacher))
-                || (!teacherSubject.getSemesterSubject()
-                .equals(semesterSubject))) {
+        boolean teacherChanged =
+                !teacherSubject.getTeacher().getId().equals(teacher.getId());
+
+        boolean subjectChanged =
+                !teacherSubject.getSemesterSubject().getId()
+                        .equals(semesterSubject.getId());
+
+        if (teacherChanged || subjectChanged) {
 
             if (teacherSubjectRepository
                     .existsByTeacherAndSemesterSubject(
@@ -136,12 +147,14 @@ public class TeacherSubjectServiceImpl
                             semesterSubject)) {
 
                 throw new DuplicateResourceException(
-                        "Teacher is already assigned to this subject.");
+                        "Teacher is already assigned to this subject."
+                );
             }
         }
 
         teacherSubject.setTeacher(teacher);
         teacherSubject.setSemesterSubject(semesterSubject);
+        teacherSubject.setActive(true);
 
         TeacherSubject updated =
                 teacherSubjectRepository.save(teacherSubject);
@@ -159,37 +172,57 @@ public class TeacherSubjectServiceImpl
         TeacherSubject teacherSubject =
                 getTeacherSubject(id);
 
-        teacherSubjectRepository.delete(teacherSubject);
+        teacherSubject.setActive(false);
+
+        teacherSubjectRepository.save(teacherSubject);
+    }
+
+    // ==========================================
+    // Current Teacher Assignments
+    // ==========================================
+
+    @Override
+    public List<TeacherSubjectResponse> getMyTeacherSubjects() {
+
+        Teacher teacher =
+                authenticatedUserService.getCurrentTeacher();
+
+        return teacherSubjectRepository
+                .findByTeacherAndActiveTrue(teacher)
+                .stream()
+                .map(TeacherSubjectMapper::toResponse)
+                .collect(Collectors.toList());
     }
 
     // ==========================================
     // Helper Methods
     // ==========================================
 
-    private TeacherSubject getTeacherSubject(
-            Long id) {
+    private TeacherSubject getTeacherSubject(Long id) {
 
-        return teacherSubjectRepository.findById(id)
+        return teacherSubjectRepository
+                .findByIdAndActiveTrue(id)
                 .orElseThrow(() ->
                         new ResourceNotFoundException(
-                                "Teacher Subject assignment not found."));
+                                "Teacher Subject assignment not found."
+                        ));
     }
 
-    private Teacher getTeacher(
-            Long id) {
+    private Teacher getTeacher(Long id) {
 
         return teacherRepository.findById(id)
                 .orElseThrow(() ->
                         new ResourceNotFoundException(
-                                "Teacher not found."));
+                                "Teacher not found."
+                        ));
     }
 
-    private SemesterSubject getSemesterSubject(
-            Long id) {
+    private SemesterSubject getSemesterSubject(Long id) {
 
         return semesterSubjectRepository.findById(id)
                 .orElseThrow(() ->
                         new ResourceNotFoundException(
-                                "Semester Subject not found."));
+                                "Semester Subject not found."
+                        ));
     }
 }

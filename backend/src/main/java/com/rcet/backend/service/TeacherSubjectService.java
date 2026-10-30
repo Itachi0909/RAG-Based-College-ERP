@@ -15,6 +15,8 @@ public interface TeacherSubjectService {
 
     List<TeacherSubjectResponse> getAllTeacherSubjects();
 
+    List<TeacherSubjectResponse> getMyTeacherSubjects();
+
     TeacherSubjectResponse updateTeacherSubject(
             Long id,
             TeacherSubjectRequest request);

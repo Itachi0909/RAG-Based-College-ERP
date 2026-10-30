@@ -2,6 +2,7 @@ package com.rcet.backend.service;
 
 import com.rcet.backend.dto.request.StudentRequest;
 import com.rcet.backend.dto.response.StudentResponse;
+import com.rcet.backend.entity.Teacher;
 
 import java.util.List;
 
@@ -13,8 +14,12 @@ public interface StudentService {
 
     List<StudentResponse> getAllStudents();
 
-    StudentResponse updateStudent(Long id,
-                                  StudentRequest request);
+    StudentResponse updateStudent(
+            Long id,
+            StudentRequest request
+    );
 
     void deleteStudent(Long id);
+
+    long countStudentsForTeacher(Teacher teacher);
 }

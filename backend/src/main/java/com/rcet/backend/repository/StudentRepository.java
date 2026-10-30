@@ -30,6 +30,11 @@ public interface StudentRepository
             Branch branch,
             Semester semester);
 
+    long countByBranchAndSemesterAndActiveTrue(
+            Branch branch,
+            Semester semester
+    );
+
 
 
     Optional<Student> findByEmail(String email);

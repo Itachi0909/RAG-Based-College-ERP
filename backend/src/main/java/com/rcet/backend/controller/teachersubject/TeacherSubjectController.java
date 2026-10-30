@@ -1,4 +1,4 @@
-package com.rcet.backend.controller.admin;
+package com.rcet.backend.controller.teachersubject;
 
 import com.rcet.backend.dto.request.TeacherSubjectRequest;
 import com.rcet.backend.dto.response.TeacherSubjectResponse;

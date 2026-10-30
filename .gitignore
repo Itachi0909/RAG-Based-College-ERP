@@ -1,0 +1,38 @@
+
+# Environment variables and secrets
+.env
+.env.*
+!.env.example
+
+# Node.js
+node_modules/
+frontend/node_modules/
+frontend/frontend/node_modules/
+dist/
+build/
+
+# Python
+__pycache__/
+*.py[cod]
+venv/
+.venv/
+rag-service/venv/
+
+# IDE
+.idea/
+.vscode/
+
+# Logs
+*.log
+
+# Database files
+*.db
+*.sqlite3
+
+# RAG generated data
+chroma_db/
+uploaded_documents/
+
+# OS files
+.DS_Store
+Thumbs.db

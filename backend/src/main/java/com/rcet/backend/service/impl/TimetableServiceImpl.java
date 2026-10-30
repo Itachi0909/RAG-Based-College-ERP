@@ -153,18 +153,12 @@ public class TimetableServiceImpl implements TimetableService {
 
     @Override
     public void deleteTimetable(Long id) {
+        Timetable timetable = timetableRepository.findById(id)
+                .orElseThrow(() ->
+                        new ResourceNotFoundException(
+                                "Timetable not found with id: " + id));
 
-        Timetable timetable =
-                timetableRepository.findByIdAndActiveTrue(id)
-                        .orElseThrow(() ->
-                                new ResourceNotFoundException(
-                                        "Timetable not found."));
-
-
-
-        timetable.setActive(false);
-
-        timetableRepository.save(timetable);
+        timetableRepository.delete(timetable);
     }
 
     @Override

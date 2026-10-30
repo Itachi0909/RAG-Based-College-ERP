@@ -5,6 +5,8 @@ import com.rcet.backend.dto.response.StudentResponse;
 import com.rcet.backend.entity.Branch;
 import com.rcet.backend.entity.Semester;
 import com.rcet.backend.entity.Student;
+import com.rcet.backend.entity.Teacher;
+import com.rcet.backend.entity.TeacherSubject;
 import com.rcet.backend.entity.User;
 import com.rcet.backend.enums.Role;
 import com.rcet.backend.exception.DuplicateResourceException;
@@ -13,6 +15,7 @@ import com.rcet.backend.mapper.StudentMapper;
 import com.rcet.backend.repository.BranchRepository;
 import com.rcet.backend.repository.SemesterRepository;
 import com.rcet.backend.repository.StudentRepository;
+import com.rcet.backend.repository.TeacherSubjectRepository;
 import com.rcet.backend.repository.UserRepository;
 import com.rcet.backend.service.StudentService;
 import org.springframework.security.crypto.password.PasswordEncoder;
@@ -28,6 +31,7 @@ public class StudentServiceImpl implements StudentService {
     private final UserRepository userRepository;
     private final BranchRepository branchRepository;
     private final SemesterRepository semesterRepository;
+    private final TeacherSubjectRepository teacherSubjectRepository;
     private final PasswordEncoder passwordEncoder;
 
     public StudentServiceImpl(
@@ -35,12 +39,14 @@ public class StudentServiceImpl implements StudentService {
             UserRepository userRepository,
             BranchRepository branchRepository,
             SemesterRepository semesterRepository,
+            TeacherSubjectRepository teacherSubjectRepository,
             PasswordEncoder passwordEncoder) {
 
         this.studentRepository = studentRepository;
         this.userRepository = userRepository;
         this.branchRepository = branchRepository;
         this.semesterRepository = semesterRepository;
+        this.teacherSubjectRepository = teacherSubjectRepository;
         this.passwordEncoder = passwordEncoder;
     }
 
@@ -51,15 +57,21 @@ public class StudentServiceImpl implements StudentService {
     @Override
     public StudentResponse createStudent(StudentRequest request) {
 
+        if (request.getPassword() == null
+                || request.getPassword().isBlank()) {
+
+            throw new IllegalArgumentException("Password is required");
+        }
+
         validateDuplicates(request);
 
         Branch branch = getBranch(request.getBranchId());
         Semester semester = getSemester(request.getSemesterId());
 
-        // Validate that semester belongs to the selected branch
         if (!semester.getBranch().getId().equals(branch.getId())) {
             throw new IllegalArgumentException(
-                    "Selected semester does not belong to the selected branch.");
+                    "Selected semester does not belong to the selected branch."
+            );
         }
 
         User user = User.builder()
@@ -89,7 +101,6 @@ public class StudentServiceImpl implements StudentService {
 
     @Override
     public StudentResponse getStudentById(Long id) {
-
         return StudentMapper.toResponse(getStudent(id));
     }
 
@@ -117,48 +128,63 @@ public class StudentServiceImpl implements StudentService {
 
         Student student = getStudent(id);
 
-        if (!student.getEnrollmentNumber().equals(request.getEnrollmentNumber())
-                && studentRepository.existsByEnrollmentNumber(request.getEnrollmentNumber())) {
+        if (!student.getEnrollmentNumber()
+                .equals(request.getEnrollmentNumber())
+                && studentRepository.existsByEnrollmentNumber(
+                request.getEnrollmentNumber())) {
 
             throw new DuplicateResourceException(
-                    "Enrollment number already exists.");
+                    "Enrollment number already exists."
+            );
         }
 
-        if (!student.getRegistrationNumber().equals(request.getRegistrationNumber())
-                && studentRepository.existsByRegistrationNumber(request.getRegistrationNumber())) {
+        if (!student.getRegistrationNumber()
+                .equals(request.getRegistrationNumber())
+                && studentRepository.existsByRegistrationNumber(
+                request.getRegistrationNumber())) {
 
             throw new DuplicateResourceException(
-                    "Registration number already exists.");
+                    "Registration number already exists."
+            );
         }
 
-        if (!student.getRollNumber().equals(request.getRollNumber())
-                && studentRepository.existsByRollNumber(request.getRollNumber())) {
+        if (!student.getRollNumber()
+                .equals(request.getRollNumber())
+                && studentRepository.existsByRollNumber(
+                request.getRollNumber())) {
 
             throw new DuplicateResourceException(
-                    "Roll number already exists.");
+                    "Roll number already exists."
+            );
         }
 
-        if (!student.getEmail().equals(request.getEmail())
-                && studentRepository.existsByEmail(request.getEmail())) {
+        if (!student.getEmail()
+                .equals(request.getEmail())
+                && studentRepository.existsByEmail(
+                request.getEmail())) {
 
             throw new DuplicateResourceException(
-                    "Email already exists.");
+                    "Email already exists."
+            );
         }
 
-        if (!student.getPhone().equals(request.getPhone())
-                && studentRepository.existsByPhone(request.getPhone())) {
+        if (!student.getPhone()
+                .equals(request.getPhone())
+                && studentRepository.existsByPhone(
+                request.getPhone())) {
 
             throw new DuplicateResourceException(
-                    "Phone number already exists.");
+                    "Phone number already exists."
+            );
         }
 
         Branch branch = getBranch(request.getBranchId());
         Semester semester = getSemester(request.getSemesterId());
 
-        // Validate that semester belongs to the selected branch
         if (!semester.getBranch().getId().equals(branch.getId())) {
             throw new IllegalArgumentException(
-                    "Selected semester does not belong to the selected branch.");
+                    "Selected semester does not belong to the selected branch."
+            );
         }
 
         StudentMapper.updateEntity(student, request);
@@ -171,17 +197,17 @@ public class StudentServiceImpl implements StudentService {
         user.setEmail(request.getEmail());
         user.setPhone(request.getPhone());
 
-        if (request.getPassword() != null &&
-                !request.getPassword().isBlank()) {
+        if (request.getPassword() != null
+                && !request.getPassword().isBlank()) {
 
             user.setPassword(
-                    passwordEncoder.encode(request.getPassword()));
+                    passwordEncoder.encode(request.getPassword())
+            );
         }
 
         userRepository.save(user);
 
-        Student updatedStudent =
-                studentRepository.save(student);
+        Student updatedStudent = studentRepository.save(student);
 
         return StudentMapper.toResponse(updatedStudent);
     }
@@ -198,11 +224,44 @@ public class StudentServiceImpl implements StudentService {
         User user = student.getUser();
 
         student.setActive(false);
-
         user.setEnabled(false);
 
         studentRepository.save(student);
         userRepository.save(user);
+    }
+
+    // ===========================================
+    // Count Students For Teacher
+    // ===========================================
+
+    @Override
+    public long countStudentsForTeacher(Teacher teacher) {
+
+        List<TeacherSubject> assignments =
+                teacherSubjectRepository
+                        .findByTeacherAndActiveTrue(teacher);
+
+        return assignments.stream()
+                .map(TeacherSubject::getSemesterSubject)
+                .filter(semesterSubject -> semesterSubject != null)
+                .map(semesterSubject -> semesterSubject.getSemester())
+                .filter(semester -> semester != null)
+                .distinct()
+                .mapToLong(semester -> {
+
+                    Branch branch = semester.getBranch();
+
+                    if (branch == null) {
+                        return 0L;
+                    }
+
+                    return studentRepository
+                            .countByBranchAndSemesterAndActiveTrue(
+                                    branch,
+                                    semester
+                            );
+                })
+                .sum();
     }
 
     // ===========================================
@@ -214,7 +273,8 @@ public class StudentServiceImpl implements StudentService {
         return studentRepository.findByIdAndActiveTrue(id)
                 .orElseThrow(() ->
                         new ResourceNotFoundException(
-                                "Student not found."));
+                                "Student not found."
+                        ));
     }
 
     private Branch getBranch(Long id) {
@@ -222,7 +282,8 @@ public class StudentServiceImpl implements StudentService {
         return branchRepository.findById(id)
                 .orElseThrow(() ->
                         new ResourceNotFoundException(
-                                "Branch not found."));
+                                "Branch not found."
+                        ));
     }
 
     private Semester getSemester(Long id) {
@@ -230,7 +291,8 @@ public class StudentServiceImpl implements StudentService {
         return semesterRepository.findById(id)
                 .orElseThrow(() ->
                         new ResourceNotFoundException(
-                                "Semester not found."));
+                                "Semester not found."
+                        ));
     }
 
     private void validateDuplicates(StudentRequest request) {
@@ -239,35 +301,40 @@ public class StudentServiceImpl implements StudentService {
                 request.getEnrollmentNumber())) {
 
             throw new DuplicateResourceException(
-                    "Enrollment number already exists.");
+                    "Enrollment number already exists."
+            );
         }
 
         if (studentRepository.existsByRegistrationNumber(
                 request.getRegistrationNumber())) {
 
             throw new DuplicateResourceException(
-                    "Registration number already exists.");
+                    "Registration number already exists."
+            );
         }
 
         if (studentRepository.existsByRollNumber(
                 request.getRollNumber())) {
 
             throw new DuplicateResourceException(
-                    "Roll number already exists.");
+                    "Roll number already exists."
+            );
         }
 
         if (studentRepository.existsByEmail(request.getEmail())
                 || userRepository.existsByEmail(request.getEmail())) {
 
             throw new DuplicateResourceException(
-                    "Email already exists.");
+                    "Email already exists."
+            );
         }
 
         if (studentRepository.existsByPhone(request.getPhone())
                 || userRepository.existsByPhone(request.getPhone())) {
 
             throw new DuplicateResourceException(
-                    "Phone number already exists.");
+                    "Phone number already exists."
+            );
         }
     }
 }

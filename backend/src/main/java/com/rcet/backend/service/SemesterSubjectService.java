@@ -7,15 +7,26 @@ import java.util.List;
 
 public interface SemesterSubjectService {
 
-    SemesterSubjectResponse createSemesterSubject(SemesterSubjectRequest request);
+    SemesterSubjectResponse createSemesterSubject(
+            SemesterSubjectRequest request
+    );
 
     List<SemesterSubjectResponse> getAllSemesterSubjects();
 
-    SemesterSubjectResponse getSemesterSubjectById(Long id);
+    SemesterSubjectResponse getSemesterSubjectById(
+            Long id
+    );
 
-    SemesterSubjectResponse updateSemesterSubject(Long id,
-                                                  SemesterSubjectRequest request);
+    SemesterSubjectResponse updateSemesterSubject(
+            Long id,
+            SemesterSubjectRequest request
+    );
 
-    void deleteSemesterSubject(Long id);
+    void deleteSemesterSubject(
+            Long id
+    );
 
+    List<SemesterSubjectResponse> getSemesterSubjectsBySemester(
+            Long semesterId
+    );
 }

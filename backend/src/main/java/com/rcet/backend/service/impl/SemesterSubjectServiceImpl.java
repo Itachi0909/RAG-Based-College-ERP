@@ -135,6 +135,17 @@ public class SemesterSubjectServiceImpl implements SemesterSubjectService {
     }
 
     @Override
+    public List<SemesterSubjectResponse> getSemesterSubjectsBySemester(
+            Long semesterId
+    ) {
+        return semesterSubjectRepository
+                .findBySemesterIdAndActiveTrue(semesterId)
+                .stream()
+                .map(this::mapToResponse)
+                .collect(Collectors.toList());
+    }
+
+    @Override
     public void deleteSemesterSubject(Long id) {
 
         SemesterSubject semesterSubject = getSemesterSubject(id);
